@@ -1,0 +1,21 @@
+{
+  "name": "@em-polymer/space-satmap",
+  "version": "3.0.0-pre.1",
+  "flat": true,
+  "description": "Map element for Polymer 3 showing the location, orbit, and next pass of a given satellite.",
+  "main": "index.html",
+  "repository": "https://github.com/emedvedev/space-satmap.git",
+  "author": "Ed Medvedev <edward.medvedev@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@em-polymer/google-map": "^3.0.0-pre.4",
+    "@polymer/polymer": "^3.0.0-pre.1",
+    "@webcomponents/webcomponentsjs": "^1.0.20",
+    "satellite.js": "^2.0.0",
+    "tle.js": "^1.0.21"
+  },
+  "resolutions": {
+    "@webcomponents/webcomponentsjs": "1.0.20",
+    "@em-polymer/google-apis": "3.0.1"
+  }
+}
