@@ -1,7 +1,8 @@
 // TODO: Next pass if user lat/lon is set
 // TODO: Eclipse area
-// TODO: Footprint
-// TODO: Icon
+// TODO: Footprint (radius)
+// TODO: Satellite icon
+// TODO: Default map size = world
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
@@ -21,9 +22,20 @@ class SpaceSatmap extends Element {
         type: Array,
         value: [],
       },
+      satelliteRedraw: {
+        type: Number,
+        value: 70,
+      },
+      orbitRedraw: {
+        type: Number,
+        value: 300000,
+      },
       map: Object,
     };
   }
+
+  static get satelliteRedraw() { return 70; }
+  static get orbitRedraw() { return 70; }
 
   _getLatLon(date) {
     const t = date || new Date();
@@ -63,11 +75,11 @@ class SpaceSatmap extends Element {
       this._setCurrentOrbit();
       if (!this.orbitInterval) {
         // Update the orbit every 5 minutes.
-        this.orbitInterval = setInterval(this._setCurrentOrbit.bind(this), 1000 * 300);
+        this.orbitInterval = setInterval(this._setCurrentOrbit.bind(this), this.orbitRedraw);
       }
     }
     if (!this.satposInterval) {
-      this.satposInterval = setInterval(this._setCurrentPosition.bind(this), 70);
+      this.satposInterval = setInterval(this._setCurrentPosition.bind(this), this.satelliteRedraw);
     }
   }
 
@@ -87,12 +99,6 @@ class SpaceSatmap extends Element {
           fill: var(--icon-toggle-pressed-color, currentcolor);
         }
       </style>
-
-      [[lat]] [[lon]]
-
-      <template is="dom-repeat" items="[[orbit]]">
-        <div>latitude="[[item.lat]]" longitude="[[item.lon]]"</div>
-      </template>
 
       <google-map map="{{map}}" api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
         <google-map-marker latitude="[[lat]]" longitude="[[lon]]"></google-map-marker>
