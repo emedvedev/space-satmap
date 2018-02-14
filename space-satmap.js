@@ -1,34 +1,31 @@
-// TODO: Next pass if user lat/lon is set
+// TODO: Next pass + marker if user lat/lon is set
+// TODO: User lat/lon from the browser location
 // TODO: Eclipse area
-// TODO: Footprint (radius)
-// TODO: Satellite icon
+// TODO: Satellite footprint (radius)
 // TODO: Satellite as a separate component
-// TODO: Center on the satellite (?)
-// TODO: "radar" animation + change color on pass
+// TODO: Center the map on the satellite (?)
+// TODO: "radar" animation + change color on pass (?)
 // TODO: Icons: generic 1, generic 2, sputnik, cute
 
 // TODO: Sublime syntax file
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
+import { FlattenedNodesObserver } from '/node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
-import { twoline2satrec, propagate, eciToGeodetic, gstime } from '/node_modules/satellite.js/dist/satellite.es.js';
-import satIcons from './space-icons.js';
+
+import './space-satellite.js';
 
 class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   static get properties() {
     return {
-      tle: Array,
-      showOrbit: {
+      userLat: Number,
+      userLon: Number,
+      detectLocation: {
         type: Boolean,
         value: true,
-      },
-      userLatLon: Array,
-      orbit: {
-        type: Array,
-        value: [],
       },
       satelliteRedraw: {
         type: Number,
@@ -43,26 +40,11 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         value: 3,
       },
       map: Object,
-      type: {
-        type: String,
-        value: 'generic',
-      },
-      icon: {
-        type: Object,
-      },
     };
-  }
-
-  static get icons() {
-    return satIcons;
   }
 
   ready() {
     super.ready();
-    if (!this.icon) {
-      this.icon = SpaceSatmap.icons[this.type];
-    }
-    console.log(this.icon);
     this.addEventListener('iron-resize', this._setZoom);
   }
 
@@ -120,50 +102,23 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     this.boundsSetter = null;
   }
 
-  _getLatLon(date) {
-    const t = date || new Date();
-    const gmst = gstime(t);
-    const eci = propagate(this.satrec, t);
-    const geo = eciToGeodetic(eci.position, gmst);
-    return {
-      lon: geo.longitude * 180 / Math.PI,
-      lat: geo.latitude * 180 / Math.PI,
-    };
+  connectedCallback() {
+    super.connectedCallback();
+    this._observer = new FlattenedNodesObserver(this, this._attachSatellites);
   }
 
-  _setCurrentOrbit() {
-    const now = new Date().getTime();
-    // Start drawing the orbit at half a period before now:
-    for (let i = 0, t = now - this.period / 2; t < now + this.period; i++, t += 20000) {
-      const latlon = this._getLatLon(new Date(t));
-      if (!this.orbit[i]) {
-        this.set(`orbit.${i}`, latlon);
-      }
-      this.set(`orbit.${i}.lat`, latlon.lat);
-      this.set(`orbit.${i}.lon`, latlon.lon);
-    }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._observer.disconnect();
   }
 
-  _setCurrentPosition() {
-    const pos = this._getLatLon();
-    this.lon = pos.lon;
-    this.lat = pos.lat;
-  }
-
-  _setTLE(tle) {
-    this.orbit = [];
-    this.period = 24 * 60 / parseFloat(tle[1].substr(52, 10)) * 60000;
-    this.satrec = twoline2satrec(tle[0], tle[1]);
-    if (this.showOrbit) {
-      this._setCurrentOrbit();
-      if (!this.orbitInterval) {
-        // Update the orbit every 5 minutes.
-        this.orbitInterval = setInterval(this._setCurrentOrbit.bind(this), this.orbitRedraw);
-      }
-    }
-    if (!this.satposInterval) {
-      this.satposInterval = setInterval(this._setCurrentPosition.bind(this), this.satelliteRedraw);
-    }
+  _attachSatellites(changes) {
+    changes.addedNodes
+      .filter(e => e.tagName === 'SPACE-SATELLITE')
+      .forEach((sat) => {
+        sat.set('satelliteRedraw', this.satelliteRedraw);
+        sat.set('orbitRedraw', this.orbitRedraw);
+      });
   }
 
   static get template() {
@@ -181,20 +136,9 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         map-type="terrain" disable-street-view-control
         on-google-map-bounds_changed="_checkBounds"
         api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
-        <google-map-marker icon="[[icon]]" latitude="[[lat]]" longitude="[[lon]]"></google-map-marker>
-        <google-map-poly geodesic stroke-opacity="0.5" stroke-color="brown">
-          <template is="dom-repeat" items="[[orbit]]">
-            <google-map-point latitude="[[item.lat]]" longitude="[[item.lon]]"></google-map-point>
-          </template>
-        </google-map-poly>
+        <slot></slot>
       </google-map>
     `;
-  }
-
-  static get observers() {
-    return [
-      '_setTLE(tle)',
-    ];
   }
 }
 

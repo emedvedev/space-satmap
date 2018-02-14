@@ -13,17 +13,14 @@ class DemoElement extends Element {
   static get template() {
     return html`
       <style>
-        :host {
-
-        }
         space-satmap {
-          height: calc(100vh - 100px);
+          height: 100vh;
         }
       </style>
 
-      <h3>Satellite Tracker</h3>
-
-      <space-satmap type="cubesat" tle="[[tle]]"></space-satmap>
+      <space-satmap>
+        <space-satellite label="AO-73" type="cubesat" tle="[[tle]]"></space-satellite>
+      </space-satmap>
     `;
   }
 }
