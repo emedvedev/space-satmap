@@ -23,7 +23,7 @@ class DemoElement extends Element {
 
       <h3>Satellite Tracker</h3>
 
-      <space-satmap tle="[[tle]]"></space-satmap>
+      <space-satmap type="cubesat" tle="[[tle]]"></space-satmap>
     `;
   }
 }

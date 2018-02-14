@@ -3,9 +3,11 @@
 // TODO: Footprint (radius)
 // TODO: Satellite icon
 // TODO: Satellite as a separate component
+// TODO: Center on the satellite (?)
+// TODO: "radar" animation + change color on pass
+// TODO: Icons: generic 1, generic 2, sputnik, cute
+
 // TODO: Sublime syntax file
-// TODO: Center on the satellite
-// TODO: Prevent panning out of bounds
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
@@ -13,6 +15,7 @@ import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import { twoline2satrec, propagate, eciToGeodetic, gstime } from '/node_modules/satellite.js/dist/satellite.es.js';
+import satIcons from './space-icons.js';
 
 class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   static get properties() {
@@ -40,11 +43,26 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         value: 3,
       },
       map: Object,
+      type: {
+        type: String,
+        value: 'generic',
+      },
+      icon: {
+        type: Object,
+      },
     };
+  }
+
+  static get icons() {
+    return satIcons;
   }
 
   ready() {
     super.ready();
+    if (!this.icon) {
+      this.icon = SpaceSatmap.icons[this.type];
+    }
+    console.log(this.icon);
     this.addEventListener('iron-resize', this._setZoom);
   }
 
@@ -65,7 +83,6 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   _checkBounds() {
     if (typeof (this.validLat) !== 'number') {
       this.validLat = 0;
-      console.log(typeof (this.validLat));
       return;
     }
     if (!this.boundsSetter) {
@@ -164,8 +181,8 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         map-type="terrain" disable-street-view-control
         on-google-map-bounds_changed="_checkBounds"
         api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
-        <google-map-marker latitude="[[lat]]" longitude="[[lon]]"></google-map-marker>
-        <google-map-poly geodesic stroke-opacity="0.5" stroke-color="green">
+        <google-map-marker icon="[[icon]]" latitude="[[lat]]" longitude="[[lon]]"></google-map-marker>
+        <google-map-poly geodesic stroke-opacity="0.5" stroke-color="brown">
           <template is="dom-repeat" items="[[orbit]]">
             <google-map-point latitude="[[item.lat]]" longitude="[[item.lon]]"></google-map-point>
           </template>
