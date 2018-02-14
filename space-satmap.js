@@ -2,11 +2,10 @@
 // TODO: User lat/lon from the browser location
 // TODO: Eclipse area
 // TODO: Satellite footprint (radius)
-// TODO: Satellite as a separate component
 // TODO: Center the map on the satellite (?)
 // TODO: "radar" animation + change color on pass (?)
 // TODO: Icons: generic 1, generic 2, sputnik, cute
-
+// TODO: Performance
 // TODO: Sublime syntax file
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
@@ -70,7 +69,6 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     if (!this.boundsSetter) {
       const bounds = this.map.getBounds();
       if (bounds.getNorthEast().lat() > 85.05 || bounds.getSouthWest().lat() < -85.05) {
-        console.log('activate setter', bounds.getNorthEast().lat(), bounds.getSouthWest().lat());
         this.boundsSetter = setTimeout(this._setBounds.bind(this), 50);
       } else {
         this.validLat = this.map.getCenter().lat();
