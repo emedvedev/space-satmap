@@ -1,12 +1,7 @@
-import { Element as PolymerElement } from '/node_modules/@polymer/polymer/polymer-element.js';
+import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 import '/space-satmap.js';
 
-// export const html = Polymer.html;
-
-export const html = (strings, ...values) => strings[0]
-+ values.map((v, i) => v + strings[i + 1]).join('');
-
-class DemoElement extends PolymerElement {
+class DemoElement extends Element {
   constructor() {
     super();
     this.tle = [
@@ -21,9 +16,12 @@ class DemoElement extends PolymerElement {
         :host {
 
         }
+        space-satmap {
+          height: calc(100vh - 100px);
+        }
       </style>
 
-      <h3>Satellite map</h3>
+      <h3>Satellite Tracker</h3>
 
       <space-satmap tle="[[tle]]"></space-satmap>
     `;

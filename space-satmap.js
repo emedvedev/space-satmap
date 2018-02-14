@@ -2,14 +2,19 @@
 // TODO: Eclipse area
 // TODO: Footprint (radius)
 // TODO: Satellite icon
-// TODO: Default map size = world
+// TODO: Satellite as a separate component
+// TODO: Sublime syntax file
+// TODO: Center on the satellite
+// TODO: Prevent panning out of bounds
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
+import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
+import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import { twoline2satrec, propagate, eciToGeodetic, gstime } from '/node_modules/satellite.js/dist/satellite.es.js';
 
-class SpaceSatmap extends Element {
+class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   static get properties() {
     return {
       tle: Array,
@@ -30,12 +35,73 @@ class SpaceSatmap extends Element {
         type: Number,
         value: 300000,
       },
+      zoom: {
+        type: Number,
+        value: 3,
+      },
       map: Object,
     };
   }
 
-  static get satelliteRedraw() { return 70; }
-  static get orbitRedraw() { return 70; }
+  ready() {
+    super.ready();
+    this.addEventListener('iron-resize', this._setZoom);
+  }
+
+  _setZoom() {
+    const zoom = this.zoom;
+    const newZoom = Math.ceil(Math.log(this.offsetHeight / 256) / Math.log(2));
+    if (zoom !== newZoom) {
+      this.zoom = newZoom;
+      if (this.map) {
+        this.map.setCenter({
+          lng: this.map.getCenter().lng(),
+          lat: 0,
+        });
+      }
+    }
+  }
+
+  _checkBounds() {
+    if (typeof (this.validLat) !== 'number') {
+      this.validLat = 0;
+      console.log(typeof (this.validLat));
+      return;
+    }
+    if (!this.boundsSetter) {
+      const bounds = this.map.getBounds();
+      if (bounds.getNorthEast().lat() > 85.05 || bounds.getSouthWest().lat() < -85.05) {
+        console.log('activate setter', bounds.getNorthEast().lat(), bounds.getSouthWest().lat());
+        this.boundsSetter = setTimeout(this._setBounds.bind(this), 50);
+      } else {
+        this.validLat = this.map.getCenter().lat();
+      }
+    }
+  }
+
+  _setBounds() {
+    const bounds = this.map.getBounds();
+    const topMargin = bounds.getNorthEast().lat() - 85.05;
+    const bottomMargin = bounds.getSouthWest().lat() + 85.05;
+
+    if (topMargin > 0 || bottomMargin < 0) {
+      if (this.map.getCenter().lat() === this.validLat) {
+        // Zoomed out or resized outside of the bounds, so we have to
+        // recalculate the center.
+        if (topMargin > 0) {
+          this.validLat = this.map.getCenter().lat() - topMargin - 0.05;
+        } else {
+          this.validLat = this.map.getCenter().lat() - bottomMargin + 0.05;
+        }
+      }
+      this.map.setCenter({
+        lng: this.map.getCenter().lng(),
+        lat: this.validLat,
+      });
+    }
+
+    this.boundsSetter = null;
+  }
 
   _getLatLon(date) {
     const t = date || new Date();
@@ -89,20 +155,17 @@ class SpaceSatmap extends Element {
         /* local styles go here */
         :host {
           display: block;
-          height: 600px;
-        }
-        iron-icon {
-          fill: var(--icon-toggle-color, rgba(0,0,0,0));
-          stroke: var(--icon-toggle-outline-color, currentcolor);
-        }
-        :host([pressed]) iron-icon {
-          fill: var(--icon-toggle-pressed-color, currentcolor);
+          height: 100%;
         }
       </style>
 
-      <google-map map="{{map}}" api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
+      <google-map map="{{map}}" latitude="0"
+        zoom="[[zoom]]" min-zoom="[[zoom]]" max-zoom="10"
+        map-type="terrain" disable-street-view-control
+        on-google-map-bounds_changed="_checkBounds"
+        api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
         <google-map-marker latitude="[[lat]]" longitude="[[lon]]"></google-map-marker>
-        <google-map-poly geodesic stroke-opacity="0.5" stroke-color="cyan">
+        <google-map-poly geodesic stroke-opacity="0.5" stroke-color="green">
           <template is="dom-repeat" items="[[orbit]]">
             <google-map-point latitude="[[item.lat]]" longitude="[[item.lon]]"></google-map-point>
           </template>
