@@ -1,15 +1,15 @@
-// TODO: User lat/lon from the browser location
-// TODO: Marker + next pass if user lat/lon is set
+// TODO: Marker icon for the ground station
+// TODO: Next pass
 // TODO: Eclipse area
 
-// TODO: Icons: generic 2, sputnik, cute
+// TODO: Icons
 
 // TODO: Satellite footprint (radius) + observer footprint
 // TODO: Center the map on the satellite (?)
 // TODO: "radar" animation + change color on pass (?)
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
-import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
+import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
 import { FlattenedNodesObserver } from '/node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
@@ -20,8 +20,12 @@ import './space-satellite.js';
 class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   static get properties() {
     return {
-      groundLat: Number,
-      groundLng: Number,
+      groundLatitude: Number,
+      groundLongitude: Number,
+      hasGroundStation: {
+        type: Boolean,
+        computed: '_hasGroundStation(groundLatitude, groundLongitude)',
+      },
       detectLocation: {
         type: Boolean,
         value: false,
@@ -29,7 +33,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
       nextPass: Boolean,
       satelliteRedraw: {
         type: Number,
-        value: 70,
+        value: 200,
       },
       orbitRedraw: {
         type: Number,
@@ -50,17 +54,17 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   ready() {
     super.ready();
     this.addEventListener('iron-resize', this._setZoom);
+
+    if (this.detectLocation && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(this._updateGround.bind(this));
+      navigator.geolocation.watchPosition(this._updateGround.bind(this));
+    }
   }
 
-  // if (this.showOrbit) {
-  //   this._setCurrentOrbit();
-  //   if (!this.orbitInterval) {
-  //     this.orbitInterval = setInterval(this._setCurrentOrbit.bind(this), this.orbitRedraw);
-  //   }
-  // }
-  // if (!this.satposInterval) {
-  //   this.satposInterval = setInterval(this._setCurrentPosition.bind(this), this.satelliteRedraw);
-  // }
+  _updateGround(position) {
+    this.groundLatitude = position.coords.latitude;
+    this.groundLongitude = position.coords.longitude;
+  }
 
   _setZoom() {
     const zoom = this.zoom;
@@ -167,6 +171,10 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     });
   }
 
+  _hasGroundStation(lat, lng) {
+    return !!lat && !!lng;
+  }
+
   static get observers() {
     return [
       '_updateIntervals(satelliteRedraw, orbitRedraw)',
@@ -182,12 +190,15 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         }
       </style>
 
-      <google-map map="{{map}}" latitude="0"
+      <google-map map="{{map}}" latitude="0" longitude="0"
         zoom="[[zoom]]" min-zoom="[[zoom]]" max-zoom="10"
         map-type="terrain" disable-street-view-control
         on-google-map-bounds_changed="_checkBounds"
         api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
         <slot></slot>
+        <template is="dom-if" if="[[hasGroundStation]]">
+          <google-map-marker latitude="[[groundLatitude]]" longitude="[[groundLongitude]]"></google-map-marker>
+        </template>
       </google-map>
     `;
   }

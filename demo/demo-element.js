@@ -32,13 +32,12 @@ class DemoElement extends Element {
           height: 100vh;
         }
       </style>
-      <space-satmap detect-location satellite-redraw="300">
+      <space-satmap detect-location satellite-redraw="200">
         <space-satellite label="Asteria" tle="[[asteria]]" orbit-color="black"></space-satellite>
         <space-satellite label="ISS" tle="[[iss]]" orbit-color="blue"></space-satellite>
         <space-satellite label="Beeaglesat" tle="[[beeaglesat]]" orbit-color="orange"></space-satellite>
         <space-satellite label="Atlantis" tle="[[atlantis]]" orbit-color="red"></space-satellite>
-        <space-satellite label="AO-73" tle="[[ao73]]" type="cubesat"></space-satellite>
-
+        <space-satellite label="AO-73" tle="[[ao73]]" icon="cubesat"></space-satellite>
       </space-satmap>
     `;
   }

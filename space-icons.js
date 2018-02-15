@@ -1,13 +1,21 @@
 // Icons courtesy of freepik.com
 
-import generic from './icons/generic.js';
-import sputnik from './icons/sputnik.js';
+import blue from './icons/blue.js';
+import bonbon from './icons/bonbon.js';
+import bumblebee from './icons/bumblebee.js';
 import cubesat from './icons/cubesat.js';
-import cute from './icons/cute.js';
+import cutie from './icons/cutie.js';
+import flappy from './icons/flappy.js';
+import sputnik from './icons/sputnik.js';
+import teal from './icons/teal.js';
 
 export default {
-  generic,
+  blue,
+  bonbon,
+  bumblebee,
   cubesat,
+  cutie,
+  flappy,
   sputnik,
-  cute,
+  teal,
 };
