@@ -1,9 +1,10 @@
-// TODO: Marker icon for the ground station
-// TODO: Next pass
-
-// TODO: Satellite footprint (radius) + observer footprint
-// TODO: Center the map on the satellite (?)
+// TODO: Next pass(es?) ("nextPass(ground) on <space-satellite>, hide-next-pass on <space-satmap>")
+// TODO: Observer's horizon
 // TODO: "radar" animation + change color on pass (?)
+
+// TODO: Center the map on the satellite ("focus=id" parameter on <space-satmap>?)
+
+// TODO: push notifications? ("enable-push on <space-satmap>")
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@em-polymer/google-apis/google-maps-api.js';
@@ -15,6 +16,7 @@ import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-beh
 
 import { getEclipseOverlay } from './utils/sun.js';
 import './space-satellite.js';
+import groundIcon from './icons/ground.js';
 
 class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   static get properties() {
@@ -22,6 +24,10 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
       groundLatitude: Number,
       groundLongitude: Number,
       groundAltitude: { type: Number, value: 1 },
+      groundIcon: {
+        type: Object,
+        value: groundIcon,
+      },
       hasGroundStation: {
         type: Boolean,
         computed: '_hasGroundStation(groundLatitude, groundLongitude)',
@@ -222,7 +228,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
         <slot></slot>
         <template is="dom-if" if="[[hasGroundStation]]">
-          <google-map-marker latitude="[[groundLatitude]]" longitude="[[groundLongitude]]"></google-map-marker>
+          <google-map-marker latitude="[[groundLatitude]]" longitude="[[groundLongitude]]" icon="[[groundIcon]]"></google-map-marker>
         </template>
       </google-map>
     `;
