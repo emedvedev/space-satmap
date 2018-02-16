@@ -19,9 +19,9 @@ class SpaceSatellite extends Element {
         type: Array,
         value: [],
       },
-      showOrbit: {
+      hideOrbit: {
         type: Boolean,
-        value: true,
+        value: false,
       },
       orbitBefore: {
         type: Number,
@@ -88,7 +88,7 @@ class SpaceSatellite extends Element {
   static get template() {
     return html`
       <google-map-marker latitude="[[lat]]" longitude="[[lng]]" map="[[map]]" icon="[[markerIcon]]" label="[[labelObject]]"></google-map-marker>
-      <template is="dom-if" if="[[showOrbit]]">
+      <template is="dom-if" if="[[!hideOrbit]]">
         <google-map-poly map="[[map]]" geodesic stroke-opacity="[[orbitOpacity]]" stroke-color="[[orbitColor]]">
           <template is="dom-repeat" items="[[orbit]]">
             <google-map-point latitude="[[item.lat]]" longitude="[[item.lng]]"></google-map-point>

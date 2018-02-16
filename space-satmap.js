@@ -1,20 +1,19 @@
 // TODO: Marker icon for the ground station
 // TODO: Next pass
-// TODO: Eclipse area
-
-// TODO: Icons
 
 // TODO: Satellite footprint (radius) + observer footprint
 // TODO: Center the map on the satellite (?)
 // TODO: "radar" animation + change color on pass (?)
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
+import '/node_modules/@em-polymer/google-apis/google-maps-api.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
 import { FlattenedNodesObserver } from '/node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 
+import { getEclipseOverlay } from './utils/sun.js';
 import './space-satellite.js';
 
 class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
@@ -22,6 +21,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     return {
       groundLatitude: Number,
       groundLongitude: Number,
+      groundAltitude: { type: Number, value: 1 },
       hasGroundStation: {
         type: Boolean,
         computed: '_hasGroundStation(groundLatitude, groundLongitude)',
@@ -30,14 +30,22 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         type: Boolean,
         value: false,
       },
-      nextPass: Boolean,
+      hideEclipseOverlay: {
+        type: Boolean,
+        value: false,
+      },
+      eclipseOverlayOpacity: {
+        type: Number,
+        value: 0.15,
+      },
+      hideNextPass: Boolean,
       satelliteRedraw: {
         type: Number,
         value: 200,
       },
-      orbitRedraw: {
+      overlayRedraw: {
         type: Number,
-        value: 300000,
+        value: 60000,
       },
       zoom: {
         type: Number,
@@ -64,6 +72,9 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   _updateGround(position) {
     this.groundLatitude = position.coords.latitude;
     this.groundLongitude = position.coords.longitude;
+    if (position.coords.altitude && position.coords.altitude > 1) {
+      this.groundAltitude = position.coords.altitude;
+    }
   }
 
   _setZoom() {
@@ -105,9 +116,9 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         // Zoomed out or resized outside of the bounds, so we have to
         // recalculate the center.
         if (topMargin > 0) {
-          this.validLat = this.map.getCenter().lat() - (topMargin - 0.05);
+          this.validLat = this.map.getCenter().lat() - (topMargin + 0.05);
         } else {
-          this.validLat = this.map.getCenter().lat() - (bottomMargin + 0.05);
+          this.validLat = this.map.getCenter().lat() - (bottomMargin - 0.05);
         }
       }
       this.map.setCenter({
@@ -135,21 +146,22 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
       .forEach((sat) => {
         this.satellites.push(sat);
       });
-    this._setCurrentOrbits();
+    this._setCurrentOverlays();
     this._setCurrentPositions();
   }
 
-  _updateIntervals(sat, orbit) {
+  _updateIntervals(sat, overlay) {
     clearInterval(this.orbitInterval);
     clearInterval(this.satposInterval);
-    this.orbitInterval = setInterval(this._setCurrentOrbits.bind(this), orbit);
+    this.orbitInterval = setInterval(this._setCurrentOverlays.bind(this), overlay);
     this.satposInterval = setInterval(this._setCurrentPositions.bind(this), sat);
   }
 
-  _setCurrentOrbits() {
+  _setCurrentOverlays() {
     const now = new Date().getTime();
+    // Orbits
     this.satellites
-      .filter(sat => sat.showOrbit)
+      .filter(sat => !sat.hideOrbit)
       .forEach((sat) => {
         const orbit = [];
         // Start drawing the orbit at half a period before now:
@@ -161,6 +173,18 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         }
         sat.set('orbit', orbit);
       });
+    // Eclipse
+    if (!this.hideEclipseOverlay && typeof google !== 'undefined') {
+      const overlayOptions = getEclipseOverlay(new Date());
+      overlayOptions.fillOpacity = this.eclipseOverlayOpacity;
+      overlayOptions.strokeWeight = 0;
+      overlayOptions.map = this.map;
+      if (!this.eclipseOverlay) {
+        this.eclipseOverlay = new google.maps.Circle(overlayOptions);
+      } else {
+        this.eclipseOverlay.setOptions(overlayOptions);
+      }
+    }
   }
 
   _setCurrentPositions() {
@@ -177,7 +201,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
 
   static get observers() {
     return [
-      '_updateIntervals(satelliteRedraw, orbitRedraw)',
+      '_updateIntervals(satelliteRedraw, overlayRedraw)',
     ];
   }
 
@@ -194,6 +218,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         zoom="[[zoom]]" min-zoom="[[zoom]]" max-zoom="10"
         map-type="terrain" disable-street-view-control
         on-google-map-bounds_changed="_checkBounds"
+        on-google-map-ready="_setCurrentOverlays"
         api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
         <slot></slot>
         <template is="dom-if" if="[[hasGroundStation]]">
