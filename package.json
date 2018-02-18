@@ -9,13 +9,17 @@
   "license": "MIT",
   "dependencies": {
     "@em-polymer/google-map": "^3.0.0-pre.4",
+    "@polymer/paper-card": "^3.0.0-pre.8",
     "@polymer/polymer": "^3.0.0-pre.1",
     "@webcomponents/webcomponentsjs": "^1.0.20",
+    "moment": "^2.20.1",
     "satellite.js": "^2.0.0",
     "tle.js": "^1.0.21"
   },
   "resolutions": {
     "@webcomponents/webcomponentsjs": "1.0.20",
-    "@em-polymer/google-apis": "3.0.1"
+    "@em-polymer/google-apis": "3.0.1",
+    "@polymer/polymer": "3.0.0-pre.9",
+    "satellite.js": "2.0.0"
   }
 }
