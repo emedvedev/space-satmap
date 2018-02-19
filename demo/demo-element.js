@@ -41,11 +41,11 @@ class DemoElement extends Element {
         }
       </style>
       <space-satmap detect-location satellite-redraw="200">
-        <space-satellite label="QZS-2" tle="[[qzs2]]" orbit-color="teal" icon="bonbon"></space-satellite>
-        <space-satellite label="Molniya 3-47" tle="[[molniya347]]" orbit-color="black" icon="sputnik"></space-satellite>
-        <space-satellite label="ISS" tle="[[iss]]" orbit-color="blue" icon="cutie"></space-satellite>
-        <space-satellite label="AO-73" tle="[[ao73]]" icon="cubesat"></space-satellite>
-        <space-satellite label="OPS 5798" tle="[[ops5798]]" orbit-color="green" icon="teal"></space-satellite>
+        <space-satellite name="QZS-2" tle="[[qzs2]]" orbit-color="teal" icon="bonbon"></space-satellite>
+        <space-satellite name="Molniya 3-47" tle="[[molniya347]]" orbit-color="black" icon="sputnik"></space-satellite>
+        <space-satellite name="ISS" tle="[[iss]]" orbit-color="blue" icon="cutie"></space-satellite>
+        <space-satellite name="AO-73" tle="[[ao73]]" icon="cubesat"></space-satellite>
+        <space-satellite name="OPS 5798" tle="[[ops5798]]" orbit-color="green" icon="teal"></space-satellite>
       </space-satmap>
     `;
   }

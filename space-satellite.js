@@ -8,16 +8,20 @@ import satIcons from './space-icons.js';
 class SpaceSatellite extends Element {
   static get properties() {
     return {
-      label: String,
+      name: String,
       labelObject: {
         type: String,
         readOnly: true,
-        computed: '_label(label)',
+        computed: '_label(name, hideLabel)',
       },
       tle: Array,
       orbit: {
         type: Array,
         value: [],
+      },
+      hideLabel: {
+        type: Boolean,
+        value: false,
       },
       hideOrbit: {
         type: Boolean,
@@ -66,8 +70,8 @@ class SpaceSatellite extends Element {
     this.satrec = twoline2satrec(this.tle[0], this.tle[1]);
   }
 
-  _label(label) {
-    return label ? { text: label, color: '#555' } : null;
+  _label(name, hideLabel) {
+    return name && !hideLabel ? { text: name, color: '#555' } : null;
   }
 
   predict(date) {
@@ -87,7 +91,7 @@ class SpaceSatellite extends Element {
 
   static get template() {
     return html`
-      <google-map-marker latitude="[[lat]]" longitude="[[lng]]" map="[[map]]" icon="[[markerIcon]]" label="[[labelObject]]"></google-map-marker>
+      <google-map-marker z-index="2" latitude="[[lat]]" longitude="[[lng]]" map="[[map]]" icon="[[markerIcon]]" label="[[labelObject]]"></google-map-marker>
       <template is="dom-if" if="[[!hideOrbit]]">
         <google-map-poly map="[[map]]" geodesic stroke-opacity="[[orbitOpacity]]" stroke-color="[[orbitColor]]">
           <template is="dom-repeat" items="[[orbit]]">
