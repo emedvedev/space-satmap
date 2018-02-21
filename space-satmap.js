@@ -1,25 +1,23 @@
 // TODO: Observer's horizon / station's reach
 // TODO: "Radar" animation + change color on pass (?)
-// TODO: scrolling to edges broke
 // TODO: Molniya orbit render
 // TODO: Center the map on the satellite ("focus=id" parameter on <space-satmap>?)
 // TODO: Push notifications? ("enable-push on <space-satmap>")
-// TODO: Next pass(es?) ("hide-next-pass on <space-satmap>")
-// TODO: Pass refresh once expires (have the next N _non-active_ passes ready)
-// TODO: Is the pass visible?
-// TODO: Visible passes vs all passes
-
+// TODO: Passes render on a phone
+// TODO: hide pass data (only header)
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@em-polymer/google-apis/google-maps-api.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
+import '/node_modules/@polymer/paper-styles/element-styles/paper-item-styles.js';
+import '/node_modules/@polymer/paper-card/paper-card.js';
 import { FlattenedNodesObserver } from '/node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
-import { propagate, eciToEcf, ecfToLookAngles, gstime } from '/node_modules/satellite.js/dist/satellite.es.js';
 import { getEclipseOverlay } from './utils/sun.js';
 import './space-satellite.js';
+import './space-satpass.js';
 import groundIcon from './icons/ground.js';
 import GroundStation from './utils/groundstation.js';
 
@@ -49,7 +47,10 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         type: Number,
         value: 0.15,
       },
-      hideNextPass: Boolean,
+      hideNextPass: {
+        type: Boolean,
+        value: false,
+      },
       satelliteRedraw: {
         type: Number,
         value: 200,
@@ -66,10 +67,6 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
       satellites: {
         type: Array,
         value: [],
-      },
-      passes: {
-        type: Object,
-        value: {},
       },
     };
   }
@@ -143,72 +140,6 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     }
 
     this.boundsSetter = null;
-  }
-
-  _getNextPasses(groundLatitude, groundLongitude, groundAltitude, hideNextPass, satellites) {
-    if (hideNextPass) {
-      this.passes = {};
-    } else if (satellites && groundLatitude && groundLongitude) {
-      const maxIterations = 12000; // within the next 48h
-      const minAltitude = 10;
-      const largeStep = 15000;
-      const groundStation = {
-        latitude: groundLatitude * (Math.PI / 180),
-        longitude: groundLongitude * (Math.PI / 180),
-        height: groundAltitude,
-      };
-      const timestamps = [];
-      const now = new Date().getTime();
-      for (let i = 0; i < maxIterations; i++) {
-        const iterDate = new Date(now + (largeStep * i));
-        timestamps[i] = [iterDate, gstime(iterDate)];
-      }
-
-      satellites
-        .filter(sat => !sat.hideNextPass)
-        .forEach((sat) => {
-          this.passes[sat.name] = [];
-          const maxPasses = 1;
-          const currentPass = [];
-          for (let i = 0; i < timestamps.length; i++) {
-            const t = timestamps[i][0];
-            const gmst = timestamps[i][1];
-            const positionEci = propagate(sat.satrec, t).position;
-            const positionEcf = eciToEcf(positionEci, gmst);
-            const lookAngles = ecfToLookAngles(groundStation, positionEcf);
-            const elevationDeg = lookAngles.elevation * (180 / Math.PI);
-            if (elevationDeg > 0) {
-              // start stepping back until elevationDeg < 0
-              // start stepping forward with smaller precision
-              // TODO: Once a pass is identified, increase the precision
-              currentPass.push([elevationDeg, lookAngles.azimuth * (180 / Math.PI), t]);
-            } else if (currentPass.length) {
-              const pass = {};
-              while (currentPass.length) {
-                const step = currentPass.pop();
-                pass.start = { date: step[2], azimuth: step[1] };
-                if (!pass.end) {
-                  pass.end = { date: step[2], azimuth: step[1] };
-                }
-                if (!pass.max || pass.max.elevation < step[0]) {
-                  pass.max = { date: step[2], azimuth: step[1], elevation: step[0] };
-                }
-                pass.duration = pass.end.date.getTime() - pass.start.date.getTime();
-              }
-              if (pass.max.elevation > minAltitude) {
-                this.passes[sat.name].push(pass);
-                if (this.passes[sat.name].length >= maxPasses) {
-                  break;
-                }
-              }
-            }
-          }
-          if (currentPass.length === timestamps.length) {
-            console.log('Stationary?'); // TODO
-          }
-          console.log(sat.name, this.passes[sat.name]);
-        });
-    }
   }
 
   connectedCallback() {
@@ -292,20 +223,33 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     }
   }
 
+  _showPasses(hideNextPass, satellites, groundLatitude) {
+    return !hideNextPass && !!satellites && !!groundLatitude;
+  }
+
   static get observers() {
     return [
       '_updateIntervals(satelliteRedraw, overlayRedraw)',
-      '_getNextPasses(groundLatitude, groundLongitude, groundAltitude, hideNextPass, satellites)',
       '_updateGroundStation(hasGroundStation, groundLatitude, groundLongitude, groundIcon, map)',
+      '_showPasses(hideNextPass, satellites, groundLatitude)',
     ];
   }
 
   static get template() {
     return html`
-      <style>
+      <style include="paper-item-styles">
         :host {
           display: block;
           height: 100%;
+        }
+        .passes {
+          position: absolute;
+          left: 10px;
+          bottom: 22px;
+        }
+        space-satpass {
+          margin: 0 10px 0 0;
+          display: inline-block;
         }
       </style>
 
@@ -317,6 +261,17 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         api-key="AIzaSyDBBKw8NnVLo7DJrYAZRoDemWUWuwOkhHM">
         <slot></slot>
       </google-map>
+
+      <template is="dom-if" if="[[_showPasses]]">
+        <div class="passes">
+          <template is="dom-repeat" items="[[satellites]]">
+            <space-satpass satellite="[[item]]"
+              ground-latitude="[[groundLatitude]]"
+              ground-longitude="[[groundLongitude]]"
+              ground-altitude="[[groundAltitude]]"></space-satpass>
+          </template>
+        </div>
+      </template>
     `;
   }
 }

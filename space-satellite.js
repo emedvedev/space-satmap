@@ -104,3 +104,5 @@ class SpaceSatellite extends Element {
 }
 
 customElements.define('space-satellite', SpaceSatellite);
+
+export default SpaceSatellite;
