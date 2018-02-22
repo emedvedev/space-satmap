@@ -1,11 +1,11 @@
 // TODO: Pass refresh once expires (have the next N _non-active_ passes ready)
 // TODO: Is the pass visible?
-// TODO: Visible passes vs all passes
 // TODO: Submit a pass PR to satellite.js
-// TODO: Next N passes
 // TODO: Optimize passes (smaller steps)
 // TODO: No passes
 // TODO: Stationary
+// TODO: Next N passes
+// TODO: Next N visible passes vs next N all passes (setting)
 
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 
@@ -53,6 +53,28 @@ class SpaceSatpass extends Element {
     }
 
     return formatted;
+  }
+
+  ready() {
+    super.ready();
+    this.tickTimer = setInterval(this._tick.bind(this), 1000);
+  }
+
+  _tick() {
+    const now = Date.now();
+    for (let i = 0; i < this.passes.length; i++) {
+      const millisUntilPass = this.passes[i].start.date.getTime() - now;
+      if (millisUntilPass <= 0) {
+        this.set(`passes.${i}.now`, true);
+      } else {
+        const timeUntilPass = new Date(millisUntilPass);
+        const hh = (`0${timeUntilPass.getUTCHours()}`).slice(-2);
+        const mm = (`0${timeUntilPass.getUTCMinutes()}`).slice(-2);
+        const ss = (`0${timeUntilPass.getUTCSeconds()}`).slice(-2);
+        this.set(`passes.${i}.now`, false);
+        this.set(`passes.${i}.until`, `${hh}:${mm}:${ss}`);
+      }
+    }
   }
 
   _icon(satellite) {
@@ -104,14 +126,14 @@ class SpaceSatpass extends Element {
           }
           if (pass.max.elevation > minAltitude) {
             pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
-            pass.start.date = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
+            pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
 
             pass.max.azimuth = SpaceSatpass.formatAzimuth(pass.max.azimuth);
-            pass.max.date = `${(`0${pass.max.date.getHours()}`).slice(-2)}:${(`0${pass.max.date.getMinutes()}`).slice(-2)}`;
+            pass.max.dateString = `${(`0${pass.max.date.getHours()}`).slice(-2)}:${(`0${pass.max.date.getMinutes()}`).slice(-2)}`;
             pass.max.elevation = Math.round(pass.max.elevation);
 
             pass.end.azimuth = SpaceSatpass.formatAzimuth(pass.end.azimuth);
-            pass.end.date = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
+            pass.end.dateString = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
 
             pass.duration = Math.ceil((pass.duration) / 1000 / 60);
             if (pass.duration > 60) {
@@ -142,6 +164,10 @@ class SpaceSatpass extends Element {
           width: 250px;
           box-sizing: border-box;
           @apply --paper-font-common-base;
+        }
+        paper-card {
+          width: 100%;
+          box-sizing: border-box;
         }
         .pass-header {
           @apply --paper-font-headline;
@@ -272,22 +298,29 @@ class SpaceSatpass extends Element {
               <img class="pass-icon" src="[[icon]]" />
               [[satellite.name]]
             </h2>
-            <h3>NNN Until Pass / Passing Now</h3>
-            <p>Passes for [[passes.0.duration]].</p>
+
+            <template is="dom-if" if="[[passes.0.now]]">
+              <h3>Passing Now</h3>
+            </template>
+            <template is="dom-if" if="[[!passes.0.now]]">
+              <h3>Next pass in [[passes.0.until]]</h3>
+            </template>
+            <p>Visible: ???</p>
+            <p>Duration: [[passes.0.duration]]</p>
             <div class="pass-position">
               <div class="pass-stages">
                 <div class="pass-start">
-                  <div class="pass-datetime">[[passes.0.start.date]]</div>
+                  <div class="pass-datetime">[[passes.0.start.dateString]]</div>
                   <div class="pass-direction">[[passes.0.start.azimuth.0]]</div>
                   <div class="pass-azimuth">[[passes.0.start.azimuth.1]]</div>
                 </div>
                 <div class="pass-max">
-                  <div class="pass-datetime">[[passes.0.max.date]]</div>
+                  <div class="pass-datetime">[[passes.0.max.dateString]]</div>
                   <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
                   <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
                 </div>
                 <div class="pass-end">
-                  <div class="pass-datetime">[[passes.0.end.date]]</div>
+                  <div class="pass-datetime">[[passes.0.end.dateString]]</div>
                   <div class="pass-direction">[[passes.0.end.azimuth.0]]</div>
                   <div class="pass-azimuth">[[passes.0.end.azimuth.1]]</div>
                 </div>
