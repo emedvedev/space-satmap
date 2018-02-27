@@ -135,6 +135,24 @@ class SpaceSatpass extends Element {
           console.log(`pass in progress for ${satellite.name}`);
           // TODO: Special case: pass is in progress
           // Go backwards to determine the boundary
+          currentStep = 0;
+          while (currentStep < maxIterations) {
+            const t = new Date(currentTime);
+            const gmst = gstime(t);
+            const positionEci = propagate(satellite.satrec, t).position;
+            const positionEcf = eciToEcf(positionEci, gmst);
+            const lookAngles = ecfToLookAngles(groundStation, positionEcf);
+            const elevationDeg = lookAngles.elevation * (180 / Math.PI);
+
+            if (elevationDeg <= 0) {
+              currentTime -= largeStep;
+              passRough = currentTime;
+              break;
+            }
+
+            currentStep += 1;
+            currentTime -= largeStep;
+          }
         }
 
         currentStep = 0;
@@ -167,6 +185,7 @@ class SpaceSatpass extends Element {
             duration = new Date(duration);
 
             if (pass.max.elevation > minAltitude) {
+              console.log(pass.start.date, pass.end.date);
               pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
               pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
 
@@ -204,9 +223,6 @@ class SpaceSatpass extends Element {
       }
 
       // Special case: stationary
-
-      // Write the pass down and filter it out
-      // Repeat from the "done" time until there's enough passes or maxiterations is over
     }
   }
 
