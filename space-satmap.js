@@ -246,10 +246,10 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
           position: absolute;
           left: 10px;
           bottom: 22px;
+          display: flex;
         }
         space-satpass {
           margin: 0 10px 0 0;
-          display: inline-block;
         }
       </style>
 

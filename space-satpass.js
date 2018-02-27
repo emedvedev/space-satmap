@@ -1,11 +1,11 @@
 // TODO: Pass refresh once expires (have the next N _non-active_ passes ready)
 // TODO: Is the pass visible?
 // TODO: Submit a pass PR to satellite.js
-// TODO: Optimize passes (smaller steps)
 // TODO: No passes
 // TODO: Stationary
 // TODO: Next N passes
 // TODO: Next N visible passes vs next N all passes (setting)
+// TODO: Styling
 
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 
@@ -23,6 +23,7 @@ class SpaceSatpass extends Element {
       satellite: Object,
       passes: { type: Array, value: [] },
       icon: { type: String, computed: '_icon(satellite)' },
+      stationary: { type: Boolean, value: false },
     };
   }
 
@@ -36,7 +37,9 @@ class SpaceSatpass extends Element {
     const value = Math.round(azimuth * (180 / Math.PI));
     const formatted = ['N', `${value}°`];
 
-    if (value > 22.5 || value <= 67.5) {
+    if (value >= 0 && value <= 22.5) {
+      formatted[0] = 'N';
+    } else if (value <= 67.5) {
       formatted[0] = 'NE';
     } else if (value <= 112.5) {
       formatted[0] = 'E';
@@ -50,6 +53,8 @@ class SpaceSatpass extends Element {
       formatted[0] = 'W';
     } else if (value <= 337.5) {
       formatted[0] = 'NW';
+    } else {
+      formatted[0] = 'N';
     }
 
     return formatted;
@@ -83,77 +88,125 @@ class SpaceSatpass extends Element {
 
   _getNextPasses(groundLatitude, groundLongitude, groundAltitude, satellite) {
     if (groundLatitude && groundLongitude && groundAltitude && satellite) {
-      const maxIterations = 17280; // within the next 48h
+      const largeStep = 30000;
+      const maxIterations = 5760; // look for passes within the next 48h
+
+      const smallStep = 1000;
+      const maxBoundedIterations = 86400; // detect passes of up to 24h in duration
+
       const minAltitude = 10;
-      const largeStep = 10000;
+      const maxPasses = 1;
+      const now = new Date().getTime();
+      const timestamps = [];
+      const currentPass = [];
+
       const groundStation = {
         latitude: groundLatitude * (Math.PI / 180),
         longitude: groundLongitude * (Math.PI / 180),
         height: groundAltitude,
       };
-      const timestamps = [];
-      const now = new Date().getTime();
-      for (let i = 0; i < maxIterations; i++) {
-        const iterDate = new Date(now + (largeStep * i));
-        timestamps[i] = [iterDate, gstime(iterDate)];
-      }
 
       this.passes = [];
-      const maxPasses = 1;
-      const currentPass = [];
-      for (let i = 0; i < timestamps.length; i++) {
-        const t = timestamps[i][0];
-        const gmst = timestamps[i][1];
+
+      let currentTime = now;
+      let currentStep = 0;
+      let passRough = null;
+
+      while (currentStep < maxIterations) {
+        const t = new Date(currentTime);
+        const gmst = gstime(t);
         const positionEci = propagate(satellite.satrec, t).position;
         const positionEcf = eciToEcf(positionEci, gmst);
         const lookAngles = ecfToLookAngles(groundStation, positionEcf);
         const elevationDeg = lookAngles.elevation * (180 / Math.PI);
+
         if (elevationDeg > 0) {
-          // TODO: Once a pass is identified, increase the precision
-          currentPass.push([elevationDeg, lookAngles.azimuth, t]);
-        } else if (currentPass.length) {
-          const pass = {};
-          while (currentPass.length) {
-            const step = currentPass.pop();
-            pass.start = { date: step[2], azimuth: step[1] };
-            if (!pass.end) {
-              pass.end = { date: step[2], azimuth: step[1] };
+          currentTime -= largeStep;
+          passRough = currentTime;
+          break;
+        }
+
+        currentStep += 1;
+        currentTime += largeStep;
+      }
+
+      if (passRough) {
+        if (currentTime < now) {
+          console.log(`pass in progress for ${satellite.name}`);
+          // TODO: Special case: pass is in progress
+          // Go backwards to determine the boundary
+        }
+
+        currentStep = 0;
+
+        while (currentStep < maxBoundedIterations) {
+          currentTime += smallStep;
+          const t = new Date(currentTime);
+          const gmst = gstime(t);
+          const positionEci = propagate(satellite.satrec, t).position;
+          const positionEcf = eciToEcf(positionEci, gmst);
+          const lookAngles = ecfToLookAngles(groundStation, positionEcf);
+          const elevationDeg = lookAngles.elevation * (180 / Math.PI);
+
+          if (elevationDeg > 0) {
+            currentPass.push([elevationDeg, lookAngles.azimuth, t]);
+          } else if (currentPass.length) {
+            const pass = {};
+            let duration = null;
+            while (currentPass.length) {
+              const step = currentPass.pop();
+              pass.start = { date: step[2], azimuth: step[1] };
+              if (!pass.end) {
+                pass.end = { date: step[2], azimuth: step[1] };
+              }
+              if (!pass.max || pass.max.elevation < step[0]) {
+                pass.max = { date: step[2], azimuth: step[1], elevation: step[0] };
+              }
+              duration = pass.end.date.getTime() - pass.start.date.getTime();
             }
-            if (!pass.max || pass.max.elevation < step[0]) {
-              pass.max = { date: step[2], azimuth: step[1], elevation: step[0] };
-            }
-            pass.duration = pass.end.date.getTime() - pass.start.date.getTime();
-          }
-          if (pass.max.elevation > minAltitude) {
-            pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
-            pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
+            duration = new Date(duration);
 
-            pass.max.azimuth = SpaceSatpass.formatAzimuth(pass.max.azimuth);
-            pass.max.dateString = `${(`0${pass.max.date.getHours()}`).slice(-2)}:${(`0${pass.max.date.getMinutes()}`).slice(-2)}`;
-            pass.max.elevation = Math.round(pass.max.elevation);
+            if (pass.max.elevation > minAltitude) {
+              pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
+              pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
 
-            pass.end.azimuth = SpaceSatpass.formatAzimuth(pass.end.azimuth);
-            pass.end.dateString = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
+              pass.max.azimuth = SpaceSatpass.formatAzimuth(pass.max.azimuth);
+              pass.max.dateString = `${(`0${pass.max.date.getHours()}`).slice(-2)}:${(`0${pass.max.date.getMinutes()}`).slice(-2)}`;
+              pass.max.elevation = Math.round(pass.max.elevation);
 
-            pass.duration = Math.ceil((pass.duration) / 1000 / 60);
-            if (pass.duration > 60) {
-              pass.duration = `${Math.ceil(pass.duration / 60)}h ${pass.duration % 60}m`;
+              pass.end.azimuth = SpaceSatpass.formatAzimuth(pass.end.azimuth);
+              pass.end.dateString = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
+
+              const durationElements = [];
+              if (duration.getHours()) {
+                durationElements.push(`${duration.getHours()}h`);
+              }
+              if (duration.getMinutes()) {
+                durationElements.push(`${duration.getMinutes()}m`);
+              }
+              if (!duration.getHours()) {
+                durationElements.push(`${duration.getSeconds()}s`);
+              }
+              pass.duration = durationElements.join(' ');
+
+              this.set('passes.0', pass);
             } else {
-              pass.duration = `${pass.duration}m`;
+              console.log(`pass discarded for ${satellite.name}`);
             }
-
-            this.set('passes.0', pass);
 
             if (this.passes.length >= maxPasses) {
               break;
             }
           }
+
+          currentStep += 1;
         }
       }
-      if (currentPass.length === timestamps.length) {
-        console.log('Stationary?'); // TODO
-      }
-      console.log(this.passes);
+
+      // Special case: stationary
+
+      // Write the pass down and filter it out
+      // Repeat from the "done" time until there's enough passes or maxiterations is over
     }
   }
 
@@ -164,6 +217,7 @@ class SpaceSatpass extends Element {
           width: 250px;
           box-sizing: border-box;
           @apply --paper-font-common-base;
+          color: rgba(0, 0, 0, .87);
         }
         paper-card {
           width: 100%;
@@ -171,8 +225,10 @@ class SpaceSatpass extends Element {
         }
         .pass-header {
           @apply --paper-font-headline;
-          margin-top: 0;
           line-height: 32px;
+          margin: -16px -16px 20px;
+          padding: 13px 16px 12px;
+          /*border-bottom: 1px solid rgba(0, 0, 0, .12);*/
         }
         .pass-header img {
           vertical-align: middle;
@@ -184,6 +240,7 @@ class SpaceSatpass extends Element {
           position: relative;
           overflow: hidden;
           box-sizing: border-box;
+          font-size: 14px;
         }
         .pass-stages {
           display: flex;
@@ -197,7 +254,7 @@ class SpaceSatpass extends Element {
           width: 200px;
           height: 200px;
           border-radius: 125px;
-          border: 2px dashed #ccc;
+          border: 1px dashed #ccc;
           content: '';
           left: 9px;
           top: 12px;
@@ -283,11 +340,94 @@ class SpaceSatpass extends Element {
           top: 20px;
         }
         .pass-direction {
-          margin-top: 5px;
+          color: rgba(0, 0, 0, .54);
         }
         .pass-azimuth {
           position: relative;
           left: 3px;
+          margin-top: 5px;
+        }
+        h3 {
+          text-align: center;
+          line-height: 22px;
+          margin: 0 0 20px;
+          font-weight: 500;
+        }
+        h3 span {
+          display: block;
+          text-transform: uppercase;
+          font-size: 14px;
+          font-weight: 400;
+        }
+        h3.now {
+          line-height: 44px;
+          text-transform: uppercase;
+          font-size: 16px;
+        }
+
+        .pass-content {
+          display: flex;
+          flex-wrap: wrap;
+        }
+        .pass-time {
+          width: 50%;
+          box-sizing: border-box;
+        }
+        .pass-parameters {
+          width: 50%;
+          box-sizing: border-box;
+          padding-left: 10%;
+        }
+        .pass-position {
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .pass-duration,
+        .pass-visibility {
+          height: 22px;
+          line-height: 22px;
+          font-size: 14px;
+          padding-left: 30px;
+          position: relative;
+          color: rgba(0, 0, 0, .54);
+        }
+        .pass-visibility {
+          display: flex;
+          align-items: center;
+          padding-left: 32px;
+        }
+        .pass-visibility span {
+          background: rgba(0, 0, 0, .12);
+          height: 6px;
+          width: 6px;
+          border-radius: 1px;
+          margin-right: 3px;
+        }
+        .pass-visibility span.visible {
+          background: #aaa;
+        }
+        .pass-duration::before,
+        .pass-visibility::before {
+          position: absolute;
+          top: 50%;
+          margin-top: -8px;
+          background-repeat: no-repeat;
+          background-position: center center;
+          width: 32px;
+          height: 16px;
+          left: 0;
+          content: '';
+          opacity: .54;
+        }
+        .pass-duration::before {
+          background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48cGF0aCBkPSJNMzkzLjkgMTg0bDIyLjYtMjIuNmM0LjctNC43IDQuNy0xMi4zIDAtMTdsLTE3LTE3Yy00LjctNC43LTEyLjMtNC43LTE3IDBsLTIwLjcgMjAuN2MtMzEuMS0yNy41LTcwLjQtNDUuOS0xMTMuOC01MC44VjQ4aDI4YzYuNiAwIDEyLTUuNCAxMi0xMlYxMmMwLTYuNi01LjQtMTItMTItMTJIMTcyYy02LjYgMC0xMiA1LjQtMTIgMTJ2MjRjMCA2LjYgNS40IDEyIDEyIDEyaDI4djQ5LjRDOTYuNCAxMDkuMyAxNiAxOTcuMiAxNiAzMDRjMCAxMTQuOSA5My4xIDIwOCAyMDggMjA4czIwOC05My4xIDIwOC0yMDhjMC00NC43LTE0LjEtODYuMS0zOC4xLTEyMHpNMjI0IDQ2NGMtODguNCAwLTE2MC03MS42LTE2MC0xNjBzNzEuNi0xNjAgMTYwLTE2MCAxNjAgNzEuNiAxNjAgMTYwLTcxLjYgMTYwLTE2MCAxNjB6bTEyLTExMmgtMjRjLTYuNiAwLTEyLTUuNC0xMi0xMlYyMDRjMC02LjYgNS40LTEyIDEyLTEyaDI0YzYuNiAwIDEyIDUuNCAxMiAxMnYxMzZjMCA2LjYtNS40IDEyLTEyIDEyeiIvPjwvc3ZnPg==);
+        }
+        .pass-visibility::before {
+          background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgNTEyIj48cGF0aCBkPSJNNTY5LjM1NCAyMzEuNjMxQzUxMi45NyAxMzUuOTQ5IDQwNy44MSA3MiAyODggNzIgMTY4LjE0IDcyIDYzLjAwNCAxMzUuOTk0IDYuNjQ2IDIzMS42MzFhNDcuOTk5IDQ3Ljk5OSAwIDAgMCAwIDQ4LjczOUM2My4wMzEgMzc2LjA1MSAxNjguMTkgNDQwIDI4OCA0NDBjMTE5Ljg2IDAgMjI0Ljk5Ni02My45OTQgMjgxLjM1NC0xNTkuNjMxYTQ3Ljk5NyA0Ny45OTcgMCAwIDAgMC00OC43Mzh6TTI4OCAzOTJjLTEwMi41NTYgMC0xOTIuMDkxLTU0LjcwMS0yNDAtMTM2IDQ0LjE1Ny03NC45MzMgMTIzLjY3Ny0xMjcuMjcgMjE2LjE2Mi0xMzUuMDA3QzI3My45NTggMTMxLjA3OCAyODAgMTQ0LjgzIDI4MCAxNjBjMCAzMC45MjgtMjUuMDcyIDU2LTU2IDU2cy01Ni0yNS4wNzItNTYtNTZsLjAwMS0uMDQyQzE1Ny43OTQgMTc5LjA0MyAxNTIgMjAwLjg0NCAxNTIgMjI0YzAgNzUuMTExIDYwLjg4OSAxMzYgMTM2IDEzNnMxMzYtNjAuODg5IDEzNi0xMzZjMC0zMS4wMzEtMTAuNC01OS42MjktMjcuODk1LTgyLjUxNUM0NTEuNzA0IDE2NC42MzggNDk4LjAwOSAyMDUuMTA2IDUyOCAyNTZjLTQ3LjkwOCA4MS4yOTktMTM3LjQ0NCAxMzYtMjQwIDEzNnoiLz48L3N2Zz4=);
+        }
+        .pass-visibility.invisible::before {
+          background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgNTEyIj48cGF0aCBkPSJNMjcyLjcwMiAzNTkuMTM5Yy04MC40ODMtOS4wMTEtMTM2LjIxMi04Ni44ODYtMTE2LjkzLTE2Ny4wNDJsMTE2LjkzIDE2Ny4wNDJ6TTI4OCAzOTJjLTEwMi41NTYgMC0xOTIuMDkyLTU0LjcwMS0yNDAtMTM2IDIxLjc1NS0zNi45MTcgNTIuMS02OC4zNDIgODguMzQ0LTkxLjY1OGwtMjcuNTQxLTM5LjM0M0M2Ny4wMDEgMTUyLjIzNCAzMS45MjEgMTg4Ljc0MSA2LjY0NiAyMzEuNjMxYTQ3Ljk5OSA0Ny45OTkgMCAwIDAgMCA0OC43MzlDNjMuMDA0IDM3Ni4wMDYgMTY4LjE0IDQ0MCAyODggNDQwYTMzMi44OSAzMzIuODkgMCAwIDAgMzkuNjQ4LTIuMzY3bC0zMi4wMjEtNDUuNzQ0QTI4NC4xNiAyODQuMTYgMCAwIDEgMjg4IDM5MnptMjgxLjM1NC0xMTEuNjMxYy0zMy4yMzIgNTYuMzk0LTgzLjQyMSAxMDEuNzQyLTE0My41NTQgMTI5LjQ5Mmw0OC4xMTYgNjguNzRjMy44MDEgNS40MjkgMi40OCAxMi45MTItMi45NDkgMTYuNzEyTDQ1MC4yMyA1MDkuODNjLTUuNDI5IDMuODAxLTEyLjkxMiAyLjQ4LTE2LjcxMi0yLjk0OUwxMDIuMDg0IDMzLjM5OWMtMy44MDEtNS40MjktMi40OC0xMi45MTIgMi45NDktMTYuNzEyTDEyNS43NyAyLjE3YzUuNDI5LTMuODAxIDEyLjkxMi0yLjQ4IDE2LjcxMiAyLjk0OWw1NS41MjYgNzkuMzI1QzIyNi42MTIgNzYuMzQzIDI1Ni44MDggNzIgMjg4IDcyYzExOS44NiAwIDIyNC45OTYgNjMuOTk0IDI4MS4zNTQgMTU5LjYzMWE0OC4wMDIgNDguMDAyIDAgMCAxIDAgNDguNzM4ek01MjggMjU2Yy00NC4xNTctNzQuOTMzLTEyMy42NzctMTI3LjI3LTIxNi4xNjItMTM1LjAwN0MzMDIuMDQyIDEzMS4wNzggMjk2IDE0NC44MyAyOTYgMTYwYzAgMzAuOTI4IDI1LjA3MiA1NiA1NiA1NnM1Ni0yNS4wNzIgNTYtNTZsLS4wMDEtLjA0MmMzMC42MzIgNTcuMjc3IDE2LjczOSAxMzAuMjYtMzYuOTI4IDE3MS43MTlsMjYuNjk1IDM4LjEzNUM0NTIuNjI2IDM0Ni41NTEgNDk4LjMwOCAzMDYuMzg2IDUyOCAyNTZ6Ii8+PC9zdmc+);
         }
       </style>
 
@@ -299,33 +439,62 @@ class SpaceSatpass extends Element {
               [[satellite.name]]
             </h2>
 
-            <template is="dom-if" if="[[passes.0.now]]">
-              <h3>Passing Now</h3>
-            </template>
-            <template is="dom-if" if="[[!passes.0.now]]">
-              <h3>Next pass in [[passes.0.until]]</h3>
-            </template>
-            <p>Visible: ???</p>
-            <p>Duration: [[passes.0.duration]]</p>
-            <div class="pass-position">
-              <div class="pass-stages">
-                <div class="pass-start">
-                  <div class="pass-datetime">[[passes.0.start.dateString]]</div>
-                  <div class="pass-direction">[[passes.0.start.azimuth.0]]</div>
-                  <div class="pass-azimuth">[[passes.0.start.azimuth.1]]</div>
+            <div class="pass-content">
+
+              <template is="dom-if" if="[[stationary]]">
+
+                <h3>Stationary</h3>
+
+                <div class="pass-position">
+                  <div class="pass-stages">
+                    <div class="pass-max">
+                      <div class="pass-datetime">[[passes.0.max.dateString]]</div>
+                      <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
+                      <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
+                    </div>
+                  </div>
+                  <div class="pass-elevation"><span>[[passes.0.max.elevation]]°</span></div>
                 </div>
-                <div class="pass-max">
-                  <div class="pass-datetime">[[passes.0.max.dateString]]</div>
-                  <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
-                  <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
+
+              </template>
+              <template is="dom-if" if="[[!stationary]]">
+
+                <div class="pass-time">
+                  <template is="dom-if" if="[[passes.0.now]]">
+                    <h3 class="now">Passing</h3>
+                  </template>
+                  <template is="dom-if" if="[[!passes.0.now]]">
+                    <h3 class="until">[[passes.0.until]] <span>until pass</span></h3>
+                  </template>
                 </div>
-                <div class="pass-end">
-                  <div class="pass-datetime">[[passes.0.end.dateString]]</div>
-                  <div class="pass-direction">[[passes.0.end.azimuth.0]]</div>
-                  <div class="pass-azimuth">[[passes.0.end.azimuth.1]]</div>
+
+                <div class="pass-parameters">
+                  <div class="pass-duration">[[passes.0.duration]]</div>
+                  <div class="pass-visibility invisible"><span></span><span></span><span></span><span></span></div>
                 </div>
-              </div>
-              <div class="pass-elevation"><span>[[passes.0.max.elevation]]°</span></div>
+
+                <div class="pass-position">
+                  <div class="pass-stages">
+                    <div class="pass-start">
+                      <div class="pass-datetime">[[passes.0.start.dateString]]</div>
+                      <div class="pass-azimuth">[[passes.0.start.azimuth.1]]</div>
+                      <div class="pass-direction">[[passes.0.start.azimuth.0]]</div>
+                    </div>
+                    <div class="pass-max">
+                      <div class="pass-datetime">[[passes.0.max.dateString]]</div>
+                      <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
+                      <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
+                    </div>
+                    <div class="pass-end">
+                      <div class="pass-datetime">[[passes.0.end.dateString]]</div>
+                      <div class="pass-azimuth">[[passes.0.end.azimuth.1]]</div>
+                      <div class="pass-direction">[[passes.0.end.azimuth.0]]</div>
+                    </div>
+                  </div>
+                  <div class="pass-elevation"><span>[[passes.0.max.elevation]]°</span></div>
+                </div>
+
+              </template>
             </div>
           </div>
         </paper-card>
