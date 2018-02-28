@@ -26,7 +26,6 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
     return {
       groundLatitude: Number,
       groundLongitude: Number,
-      groundAltitude: { type: Number, value: 1 },
       groundIcon: {
         type: Object,
         value: groundIcon,
@@ -84,9 +83,6 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
   _updateGround(position) {
     this.groundLatitude = position.coords.latitude;
     this.groundLongitude = position.coords.longitude;
-    if (position.coords.altitude && position.coords.altitude > 1) {
-      this.groundAltitude = position.coords.altitude;
-    }
   }
 
   _setZoom() {
@@ -267,8 +263,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
           <template is="dom-repeat" items="[[satellites]]">
             <space-satpass satellite="[[item]]"
               ground-latitude="[[groundLatitude]]"
-              ground-longitude="[[groundLongitude]]"
-              ground-altitude="[[groundAltitude]]"></space-satpass>
+              ground-longitude="[[groundLongitude]]"></space-satpass>
           </template>
         </div>
       </template>

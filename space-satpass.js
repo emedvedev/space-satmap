@@ -1,11 +1,12 @@
-// TODO: Pass refresh once expires (have the next N _non-active_ passes ready)
 // TODO: Is the pass visible?
-// TODO: Submit a pass PR to satellite.js
 // TODO: No passes
 // TODO: Stationary
+// TODO: Styling
+// TODO: Update after a pass
+
+// TODO: Submit a pass PR to satellite.js
 // TODO: Next N passes
 // TODO: Next N visible passes vs next N all passes (setting)
-// TODO: Styling
 
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 
@@ -13,13 +14,15 @@ import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
 import { propagate, eciToEcf, ecfToLookAngles, gstime } from '/node_modules/satellite.js/dist/satellite.es.js';
 import satIcons from './space-icons.js';
+import SunCalc from '/utils/suncalc.js';
 
 class SpaceSatpass extends Element {
   static get properties() {
     return {
       groundLatitude: Number,
       groundLongitude: Number,
-      groundAltitude: Number,
+      roughLatitude: { type: Number, computed: '_roughCoords(groundLatitude)' },
+      roughLongitude: { type: Number, computed: '_roughCoords(groundLongitude)' },
       satellite: Object,
       passes: { type: Array, value: [] },
       icon: { type: String, computed: '_icon(satellite)' },
@@ -29,7 +32,7 @@ class SpaceSatpass extends Element {
 
   static get observers() {
     return [
-      '_getNextPasses(groundLatitude, groundLongitude, groundAltitude, satellite)',
+      '_getNextPasses(roughLatitude, roughLongitude, satellite)',
     ];
   }
 
@@ -65,6 +68,10 @@ class SpaceSatpass extends Element {
     this.tickTimer = setInterval(this._tick.bind(this), 1000);
   }
 
+  _roughCoords(coord) {
+    return coord.toFixed(3);
+  }
+
   _tick() {
     const now = Date.now();
     for (let i = 0; i < this.passes.length; i++) {
@@ -86,24 +93,24 @@ class SpaceSatpass extends Element {
     return satIcons[satellite.icon].url;
   }
 
-  _getNextPasses(groundLatitude, groundLongitude, groundAltitude, satellite) {
-    if (groundLatitude && groundLongitude && groundAltitude && satellite) {
+  _getNextPasses(roughLatitude, roughLongitude, satellite) {
+    console.log(roughLatitude, roughLongitude, satellite);
+    if (roughLatitude && roughLongitude && satellite) {
       const largeStep = 30000;
       const maxIterations = 5760; // look for passes within the next 48h
 
       const smallStep = 1000;
-      const maxBoundedIterations = 86400; // detect passes of up to 24h in duration
+      const maxBoundedIterations = 86400 * 2; // detect passes of up to 24h in duration
 
       const minAltitude = 10;
       const maxPasses = 1;
       const now = new Date().getTime();
-      const timestamps = [];
       const currentPass = [];
 
       const groundStation = {
-        latitude: groundLatitude * (Math.PI / 180),
-        longitude: groundLongitude * (Math.PI / 180),
-        height: groundAltitude,
+        latitude: roughLatitude * (Math.PI / 180),
+        longitude: roughLongitude * (Math.PI / 180),
+        height: 1,
       };
 
       this.passes = [];
@@ -133,8 +140,6 @@ class SpaceSatpass extends Element {
       if (passRough) {
         if (currentTime < now) {
           console.log(`pass in progress for ${satellite.name}`);
-          // TODO: Special case: pass is in progress
-          // Go backwards to determine the boundary
           currentStep = 0;
           while (currentStep < maxIterations) {
             const t = new Date(currentTime);
@@ -167,12 +172,21 @@ class SpaceSatpass extends Element {
           const elevationDeg = lookAngles.elevation * (180 / Math.PI);
 
           if (elevationDeg > 0) {
-            currentPass.push([elevationDeg, lookAngles.azimuth, t]);
+            const sun = SunCalc.getPosition(t, roughLatitude, roughLongitude).altitude * (180 / Math.PI);
+            const sunlit = sun > -18 && sun < -6;
+            const eclipsed = null;
+            currentPass.push([elevationDeg, lookAngles.azimuth, t, sunlit]);
           } else if (currentPass.length) {
             const pass = {};
             let duration = null;
+            const sunlitRate = [0, 0];
+
             while (currentPass.length) {
               const step = currentPass.pop();
+              sunlitRate[0] += 1;
+              if (step[3]) {
+                sunlitRate[1] += 1;
+              }
               pass.start = { date: step[2], azimuth: step[1] };
               if (!pass.end) {
                 pass.end = { date: step[2], azimuth: step[1] };
@@ -185,7 +199,7 @@ class SpaceSatpass extends Element {
             duration = new Date(duration);
 
             if (pass.max.elevation > minAltitude) {
-              console.log(pass.start.date, pass.end.date);
+              console.log(pass.start.date, pass.end.date, sunlitRate);
               pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
               pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
 
@@ -197,14 +211,14 @@ class SpaceSatpass extends Element {
               pass.end.dateString = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
 
               const durationElements = [];
-              if (duration.getHours()) {
-                durationElements.push(`${duration.getHours()}h`);
+              if (duration.getUTCHours()) {
+                durationElements.push(`${duration.getUTCHours()}h`);
               }
-              if (duration.getMinutes()) {
-                durationElements.push(`${duration.getMinutes()}m`);
+              if (duration.getUTCMinutes()) {
+                durationElements.push(`${duration.getUTCMinutes()}m`);
               }
-              if (!duration.getHours()) {
-                durationElements.push(`${duration.getSeconds()}s`);
+              if (!duration.getUTCHours()) {
+                durationElements.push(`${duration.getUTCSeconds()}s`);
               }
               pass.duration = durationElements.join(' ');
 
@@ -447,7 +461,7 @@ class SpaceSatpass extends Element {
         }
       </style>
 
-      <template is="dom-if" if="[[groundLatitude]]">
+      <template is="dom-if" if="[[roughLatitude]]">
         <paper-card elevation="1">
           <div class="card-content">
             <h2 class="pass-header">
@@ -475,40 +489,51 @@ class SpaceSatpass extends Element {
               </template>
               <template is="dom-if" if="[[!stationary]]">
 
-                <div class="pass-time">
-                  <template is="dom-if" if="[[passes.0.now]]">
-                    <h3 class="now">Passing</h3>
-                  </template>
-                  <template is="dom-if" if="[[!passes.0.now]]">
-                    <h3 class="until">[[passes.0.until]] <span>until pass</span></h3>
-                  </template>
-                </div>
+                <template is="dom-if" if="[[passes.0]]">
 
-                <div class="pass-parameters">
-                  <div class="pass-duration">[[passes.0.duration]]</div>
-                  <div class="pass-visibility invisible"><span></span><span></span><span></span><span></span></div>
-                </div>
-
-                <div class="pass-position">
-                  <div class="pass-stages">
-                    <div class="pass-start">
-                      <div class="pass-datetime">[[passes.0.start.dateString]]</div>
-                      <div class="pass-azimuth">[[passes.0.start.azimuth.1]]</div>
-                      <div class="pass-direction">[[passes.0.start.azimuth.0]]</div>
-                    </div>
-                    <div class="pass-max">
-                      <div class="pass-datetime">[[passes.0.max.dateString]]</div>
-                      <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
-                      <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
-                    </div>
-                    <div class="pass-end">
-                      <div class="pass-datetime">[[passes.0.end.dateString]]</div>
-                      <div class="pass-azimuth">[[passes.0.end.azimuth.1]]</div>
-                      <div class="pass-direction">[[passes.0.end.azimuth.0]]</div>
-                    </div>
+                  <div class="pass-time">
+                    <template is="dom-if" if="[[passes.0.now]]">
+                      <h3 class="now">Passing</h3>
+                    </template>
+                    <template is="dom-if" if="[[!passes.0.now]]">
+                      <h3 class="until">[[passes.0.until]] <span>until pass</span></h3>
+                    </template>
                   </div>
-                  <div class="pass-elevation"><span>[[passes.0.max.elevation]]°</span></div>
-                </div>
+
+                  <div class="pass-parameters">
+                    <div class="pass-duration">[[passes.0.duration]]</div>
+                    <div class="pass-visibility invisible"><span></span><span></span><span></span><span></span></div>
+                  </div>
+
+                  <div class="pass-position">
+                    <div class="pass-stages">
+                      <div class="pass-start">
+                        <div class="pass-datetime">[[passes.0.start.dateString]]</div>
+                        <div class="pass-azimuth">[[passes.0.start.azimuth.1]]</div>
+                        <div class="pass-direction">[[passes.0.start.azimuth.0]]</div>
+                      </div>
+                      <div class="pass-max">
+                        <div class="pass-datetime">[[passes.0.max.dateString]]</div>
+                        <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
+                        <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
+                      </div>
+                      <div class="pass-end">
+                        <div class="pass-datetime">[[passes.0.end.dateString]]</div>
+                        <div class="pass-azimuth">[[passes.0.end.azimuth.1]]</div>
+                        <div class="pass-direction">[[passes.0.end.azimuth.0]]</div>
+                      </div>
+                    </div>
+                    <div class="pass-elevation"><span>[[passes.0.max.elevation]]°</span></div>
+                  </div>
+
+                </template>
+
+                <template is="dom-if" if="[[!passes.0]]">
+                  <div class="pass-time">
+                    <h3 class="now">No passes</h3>
+                    <p>Passes are calculated for the next 48 hours.</p>
+                  </div>
+                </template>
 
               </template>
             </div>

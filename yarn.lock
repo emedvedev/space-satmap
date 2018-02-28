@@ -92,6 +92,10 @@ satellite.js@2.0.0, satellite.js@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/satellite.js/-/satellite.js-2.0.0.tgz#0cafd7190a76a156c55f7d83b6ad3986ed9bff2b"
 
+suncalc@^1.8.0:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/suncalc/-/suncalc-1.8.0.tgz#1d9898109563078750f4994a959e654d876acbf5"
+
 tle.js@^1.0.21:
   version "1.0.21"
   resolved "https://registry.yarnpkg.com/tle.js/-/tle.js-1.0.21.tgz#e8ab566a57450b3cc184d7d0c9b35f0b931986ce"
