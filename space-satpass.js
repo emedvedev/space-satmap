@@ -1,20 +1,9 @@
-// TODO: Is the pass visible?
-// TODO: No passes
-// TODO: Stationary
-// TODO: Styling
-// TODO: Update after a pass
-
-// TODO: Submit a pass PR to satellite.js
-// TODO: Next N passes
-// TODO: Next N visible passes vs next N all passes (setting)
-
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
 
 import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
-import { propagate, eciToEcf, ecfToLookAngles, gstime } from '/node_modules/satellite.js/dist/satellite.es.js';
+import predict from './utils/jspredict.js';
 import satIcons from './space-icons.js';
-import SunCalc from '/utils/suncalc.js';
 
 class SpaceSatpass extends Element {
   static get properties() {
@@ -37,7 +26,7 @@ class SpaceSatpass extends Element {
   }
 
   static formatAzimuth(azimuth) {
-    const value = Math.round(azimuth * (180 / Math.PI));
+    const value = Math.round(azimuth);
     const formatted = ['N', `${value}°`];
 
     if (value >= 0 && value <= 22.5) {
@@ -75,6 +64,13 @@ class SpaceSatpass extends Element {
   _tick() {
     const now = Date.now();
     for (let i = 0; i < this.passes.length; i++) {
+      if (this.passes[i].end.date.getTime() <= now && !this.nextLocked) {
+        this.nextLocked = true;
+        this._getNextPasses(this.roughLatitude, this.roughLongitude, this.satellite);
+        this.nextLocked = false;
+        return;
+      }
+
       const millisUntilPass = this.passes[i].start.date.getTime() - now;
       if (millisUntilPass <= 0) {
         this.set(`passes.${i}.now`, true);
@@ -93,41 +89,97 @@ class SpaceSatpass extends Element {
     return satIcons[satellite.icon].url;
   }
 
+  calculatePosition(currentTime) {
+    const groundStation = [
+      this.roughLatitude,
+      this.roughLongitude,
+      0.01,
+    ];
+
+    const prediction = predict.observe(this.satellite.stringTLE, groundStation, currentTime);
+
+    return {
+      elevation: prediction.elevation,
+      azimuth: prediction.azimuth,
+      t: new Date(currentTime),
+      visible: prediction.sunlit && prediction.eclipseDepth > -18 && prediction.eclipseDepth < -6,
+    };
+  }
+
+  _processPass(segments) {
+    const pass = {};
+    const totalSegments = segments.length;
+    let visibleSegments = 0;
+    let duration = null;
+
+    while (segments.length) {
+      const step = segments.pop();
+      pass.start = { date: step.t, azimuth: step.azimuth };
+      if (!pass.end) {
+        pass.end = { date: step.t, azimuth: step.azimuth };
+      }
+      if (!pass.max || pass.max.elevation < step.elevation) {
+        pass.max = { date: step.t, azimuth: step.azimuth, elevation: step.elevation };
+      }
+      duration = pass.end.date.getTime() - pass.start.date.getTime();
+      if (step.visible) {
+        visibleSegments += 1;
+      }
+    }
+    duration = new Date(duration);
+
+    pass.visibility = (100 / totalSegments) * visibleSegments;
+    pass.visibilitySegments = [pass.visibility > 0, pass.visibility > 25, pass.visibility > 50, pass.visibility > 75];
+
+    pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
+    pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
+
+    pass.max.azimuth = SpaceSatpass.formatAzimuth(pass.max.azimuth);
+    pass.max.dateString = `${(`0${pass.max.date.getHours()}`).slice(-2)}:${(`0${pass.max.date.getMinutes()}`).slice(-2)}`;
+    pass.max.elevation = Math.round(pass.max.elevation);
+
+    pass.end.azimuth = SpaceSatpass.formatAzimuth(pass.end.azimuth);
+    pass.end.dateString = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
+
+    const durationElements = [];
+    if (duration.getUTCHours()) {
+      durationElements.push(`${duration.getUTCHours()}h`);
+    }
+    if (duration.getUTCMinutes()) {
+      durationElements.push(`${duration.getUTCMinutes()}m`);
+    }
+    if (!duration.getUTCHours()) {
+      durationElements.push(`${duration.getUTCSeconds()}s`);
+    }
+    pass.duration = durationElements.join(' ');
+
+    console.log(pass);
+    return pass;
+  }
+
   _getNextPasses(roughLatitude, roughLongitude, satellite) {
-    console.log(roughLatitude, roughLongitude, satellite);
     if (roughLatitude && roughLongitude && satellite) {
+      const smallStep = 1000;
       const largeStep = 30000;
       const maxIterations = 5760; // look for passes within the next 48h
+      const minAltitude = 10; // threshold altitude to count a pass
 
-      const smallStep = 1000;
-      const maxBoundedIterations = 86400 * 2; // detect passes of up to 24h in duration
-
-      const minAltitude = 10;
       const maxPasses = 1;
+
       const now = new Date().getTime();
       const currentPass = [];
-
-      const groundStation = {
-        latitude: roughLatitude * (Math.PI / 180),
-        longitude: roughLongitude * (Math.PI / 180),
-        height: 1,
-      };
 
       this.passes = [];
 
       let currentTime = now;
       let currentStep = 0;
       let passRough = null;
+      let position = null;
 
       while (currentStep < maxIterations) {
-        const t = new Date(currentTime);
-        const gmst = gstime(t);
-        const positionEci = propagate(satellite.satrec, t).position;
-        const positionEcf = eciToEcf(positionEci, gmst);
-        const lookAngles = ecfToLookAngles(groundStation, positionEcf);
-        const elevationDeg = lookAngles.elevation * (180 / Math.PI);
+        position = this.calculatePosition(currentTime);
 
-        if (elevationDeg > 0) {
+        if (position.elevation > 0) {
           currentTime -= largeStep;
           passRough = currentTime;
           break;
@@ -137,106 +189,74 @@ class SpaceSatpass extends Element {
         currentTime += largeStep;
       }
 
-      if (passRough) {
-        if (currentTime < now) {
-          console.log(`pass in progress for ${satellite.name}`);
-          currentStep = 0;
-          while (currentStep < maxIterations) {
-            const t = new Date(currentTime);
-            const gmst = gstime(t);
-            const positionEci = propagate(satellite.satrec, t).position;
-            const positionEcf = eciToEcf(positionEci, gmst);
-            const lookAngles = ecfToLookAngles(groundStation, positionEcf);
-            const elevationDeg = lookAngles.elevation * (180 / Math.PI);
+      if (!passRough) { return; }
 
-            if (elevationDeg <= 0) {
-              currentTime -= largeStep;
-              passRough = currentTime;
-              break;
-            }
-
-            currentStep += 1;
-            currentTime -= largeStep;
-          }
-        }
-
+      if (currentTime < now) {
+        // console.log(`pass in progress for ${satellite.name}`);
         currentStep = 0;
+        while (currentStep < maxIterations) {
+          position = this.calculatePosition(currentTime);
 
-        while (currentStep < maxBoundedIterations) {
-          currentTime += smallStep;
-          const t = new Date(currentTime);
-          const gmst = gstime(t);
-          const positionEci = propagate(satellite.satrec, t).position;
-          const positionEcf = eciToEcf(positionEci, gmst);
-          const lookAngles = ecfToLookAngles(groundStation, positionEcf);
-          const elevationDeg = lookAngles.elevation * (180 / Math.PI);
-
-          if (elevationDeg > 0) {
-            const sun = SunCalc.getPosition(t, roughLatitude, roughLongitude).altitude * (180 / Math.PI);
-            const sunlit = sun > -18 && sun < -6;
-            const eclipsed = null;
-            currentPass.push([elevationDeg, lookAngles.azimuth, t, sunlit]);
-          } else if (currentPass.length) {
-            const pass = {};
-            let duration = null;
-            const sunlitRate = [0, 0];
-
-            while (currentPass.length) {
-              const step = currentPass.pop();
-              sunlitRate[0] += 1;
-              if (step[3]) {
-                sunlitRate[1] += 1;
-              }
-              pass.start = { date: step[2], azimuth: step[1] };
-              if (!pass.end) {
-                pass.end = { date: step[2], azimuth: step[1] };
-              }
-              if (!pass.max || pass.max.elevation < step[0]) {
-                pass.max = { date: step[2], azimuth: step[1], elevation: step[0] };
-              }
-              duration = pass.end.date.getTime() - pass.start.date.getTime();
-            }
-            duration = new Date(duration);
-
-            if (pass.max.elevation > minAltitude) {
-              console.log(pass.start.date, pass.end.date, sunlitRate);
-              pass.start.azimuth = SpaceSatpass.formatAzimuth(pass.start.azimuth);
-              pass.start.dateString = `${(`0${pass.start.date.getHours()}`).slice(-2)}:${(`0${pass.start.date.getMinutes()}`).slice(-2)}`;
-
-              pass.max.azimuth = SpaceSatpass.formatAzimuth(pass.max.azimuth);
-              pass.max.dateString = `${(`0${pass.max.date.getHours()}`).slice(-2)}:${(`0${pass.max.date.getMinutes()}`).slice(-2)}`;
-              pass.max.elevation = Math.round(pass.max.elevation);
-
-              pass.end.azimuth = SpaceSatpass.formatAzimuth(pass.end.azimuth);
-              pass.end.dateString = `${(`0${pass.end.date.getHours()}`).slice(-2)}:${(`0${pass.end.date.getMinutes()}`).slice(-2)}`;
-
-              const durationElements = [];
-              if (duration.getUTCHours()) {
-                durationElements.push(`${duration.getUTCHours()}h`);
-              }
-              if (duration.getUTCMinutes()) {
-                durationElements.push(`${duration.getUTCMinutes()}m`);
-              }
-              if (!duration.getUTCHours()) {
-                durationElements.push(`${duration.getUTCSeconds()}s`);
-              }
-              pass.duration = durationElements.join(' ');
-
-              this.set('passes.0', pass);
-            } else {
-              console.log(`pass discarded for ${satellite.name}`);
-            }
-
-            if (this.passes.length >= maxPasses) {
-              break;
-            }
+          if (position.elevation <= 0) {
+            currentTime -= largeStep;
+            passRough = currentTime;
+            break;
           }
 
           currentStep += 1;
+          currentTime -= largeStep;
         }
       }
 
+      // Rough start of the pass is determined
+      // Need to determine the exact start
+
+      currentStep = 0;
+
+      while (currentStep < maxIterations) {
+        currentTime += largeStep;
+        position = this.calculatePosition(currentTime);
+
+        if (position.elevation > 0) {
+          currentPass.push(position);
+        } else if (currentPass.length) {
+          // Precise beginning
+          let preciseStartTime = currentPass[0].t.getTime() - smallStep;
+          position = this.calculatePosition(preciseStartTime);
+          while (position.elevation > 0) {
+            preciseStartTime -= smallStep;
+            position = this.calculatePosition(preciseStartTime);
+          }
+          currentPass.unshift(position);
+
+          // Precise end
+          let preciseEndTime = currentPass[currentPass.length - 1].t.getTime() + smallStep;
+          position = this.calculatePosition(preciseEndTime);
+          while (position.elevation > 0) {
+            preciseEndTime += smallStep;
+            position = this.calculatePosition(preciseEndTime);
+          }
+          currentPass.push(position);
+
+          const pass = this._processPass(currentPass);
+          if (pass.max.elevation > minAltitude) {
+            this.set('passes.0', pass);
+          } else {
+            // console.log(`pass discarded for ${satellite.name}`);
+          }
+
+          if (this.passes.length >= maxPasses) {
+            break;
+          }
+        }
+
+        currentStep += 1;
+      }
+
       // Special case: stationary
+      if (currentPass.length === maxIterations) {
+        this.stationary = true;
+      }
     }
   }
 
@@ -434,8 +454,8 @@ class SpaceSatpass extends Element {
           border-radius: 1px;
           margin-right: 3px;
         }
-        .pass-visibility span.visible {
-          background: #aaa;
+        .pass-visibility span.active {
+          background: rgba(0, 0, 0, .54);
         }
         .pass-duration::before,
         .pass-visibility::before {
@@ -473,17 +493,9 @@ class SpaceSatpass extends Element {
 
               <template is="dom-if" if="[[stationary]]">
 
-                <h3>Stationary</h3>
-
-                <div class="pass-position">
-                  <div class="pass-stages">
-                    <div class="pass-max">
-                      <div class="pass-datetime">[[passes.0.max.dateString]]</div>
-                      <div class="pass-direction">[[passes.0.max.azimuth.0]]</div>
-                      <div class="pass-azimuth">[[passes.0.max.azimuth.1]]</div>
-                    </div>
-                  </div>
-                  <div class="pass-elevation"><span>[[passes.0.max.elevation]]°</span></div>
+                <div class="pass-time">
+                  <h3 class="now">Stationary</h3>
+                  <p>The satellite appears to have a geostationary orbit.</p>
                 </div>
 
               </template>
@@ -502,7 +514,40 @@ class SpaceSatpass extends Element {
 
                   <div class="pass-parameters">
                     <div class="pass-duration">[[passes.0.duration]]</div>
-                    <div class="pass-visibility invisible"><span></span><span></span><span></span><span></span></div>
+                    <template is="dom-if" if="[[passes.0.visibilitySegments.0]]">
+                      <div class="pass-visibility">
+                        <span class="active"></span>
+
+                        <template is="dom-if" if="[[passes.0.visibilitySegments.1]]">
+                          <span class="active"></span>
+                        </template>
+
+                        <template is="dom-if" if="[[!passes.0.visibilitySegments.1]]">
+                          <span></span>
+                        </template>
+
+                        <template is="dom-if" if="[[passes.0.visibilitySegments.2]]">
+                          <span class="active"></span>
+                        </template>
+
+                        <template is="dom-if" if="[[!passes.0.visibilitySegments.2]]">
+                          <span></span>
+                        </template>
+
+                        <template is="dom-if" if="[[passes.0.visibilitySegments.3]]">
+                          <span class="active"></span>
+                        </template>
+
+                        <template is="dom-if" if="[[!passes.0.visibilitySegments.3]]">
+                          <span></span>
+                        </template>
+                      </div>
+                    </template>
+                    <template is="dom-if" if="[[!passes.0.visibilitySegments.0]]">
+                      <div class="pass-visibility invisible">
+                        <span></span><span></span><span></span><span></span>
+                      </div>
+                    </template>
                   </div>
 
                   <div class="pass-position">
@@ -531,7 +576,7 @@ class SpaceSatpass extends Element {
                 <template is="dom-if" if="[[!passes.0]]">
                   <div class="pass-time">
                     <h3 class="now">No passes</h3>
-                    <p>Passes are calculated for the next 48 hours.</p>
+                    <p>No passes for the next 48 hours.</p>
                   </div>
                 </template>
 

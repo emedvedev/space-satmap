@@ -22,11 +22,11 @@ class DemoElement extends Element {
       '2 27451  86.3936 280.4066 0001571  89.1236 271.0139 14.34223839826193',
     ];
     this.molniya347 = `MOLNIYA 3-47
-      1 23642U 95042A   18041.79420537  .00001569  00000-0  39995-3 0  9997
-      2 23642  62.9357 259.5030 7229585 288.8717  10.1175  2.01940750165043`;
-    this.molniya = [
-      '1 08195U 75081A   18045.01405012  .00000930  00000-0  63561-3 0  9991',
-      '2 08195  61.8616  60.4846 7508686 281.2199  10.0818  2.00850991310953',
+      1 23642U 95042A   18058.62866679  .00000210  00000-0 -75405-2 0  9996
+      2 23642  62.9606 257.1441 7218342 288.9618  10.0525  2.01983768165381`;
+    this.comsat = [
+      '1 36582U 10021B   18059.48174147 +.00000060 +00000-0 +00000-0 0  9993',
+      '2 36582 000.0100 179.4763 0002536 176.4839 348.8289 01.00271885028574',
     ];
     this.qzs2 = `1 42738U 17028A   18045.98320326 -.00000151 +00000-0 +00000-0 0  9991
                  2 42738 044.3969 286.2529 0739632 270.9510 080.7101 01.00283927002628`;
@@ -46,7 +46,7 @@ class DemoElement extends Element {
         <space-satellite name="Molniya 3-47" tle="[[molniya347]]" orbit-color="black" icon="sputnik"></space-satellite>
         <space-satellite name="ISS" tle="[[iss]]" orbit-color="blue" icon="cutie"></space-satellite>
         <space-satellite name="AO-73" tle="[[ao73]]" icon="cubesat"></space-satellite>
-        <space-satellite name="OPS 5798" tle="[[ops5798]]" orbit-color="green" icon="teal"></space-satellite>
+        <space-satellite name="COMSATBW-2" tle="[[comsat]]" hide-orbit icon="teal"></space-satellite>
       </space-satmap>
     `;
   }

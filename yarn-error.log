@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/Cellar/node/9.5.0/bin/node /usr/local/Cellar/yarn/1.3.2/libexec/bin/yarn.js add @GoogleWebComponents/google-map --save
+  /usr/local/Cellar/node/9.5.0/bin/node /usr/local/Cellar/yarn/1.3.2/libexec/bin/yarn.js add moment --save
 
 PATH: 
   /Users/emedvedev/Library/google-cloud-sdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/go/bin:/usr/local/MacGPG2/bin
@@ -15,8 +15,8 @@ Platform:
 
 npm manifest: 
   {
-    "name": "space-satmap",
-    "version": "1.0.0",
+    "name": "@em-polymer/space-satmap",
+    "version": "3.0.0-pre.1",
     "flat": true,
     "description": "Map element for Polymer 3 showing the location, orbit, and next pass of a given satellite.",
     "main": "index.html",
@@ -24,11 +24,17 @@ npm manifest:
     "author": "Ed Medvedev <edward.medvedev@gmail.com>",
     "license": "MIT",
     "dependencies": {
+      "@em-polymer/google-map": "^3.0.0-pre.5",
+      "@polymer/paper-card": "^3.0.0-pre.8",
       "@polymer/polymer": "^3.0.0-pre.1",
-      "@webcomponents/webcomponentsjs": "^1.0.20"
+      "@webcomponents/webcomponentsjs": "^1.0.20",
+      "moment": "^2.20.1",
+      "satellite.js": "^2.0.0"
     },
     "resolutions": {
-      "@webcomponents/webcomponentsjs": "1.0.20"
+      "@webcomponents/webcomponentsjs": "1.0.20",
+      "@em-polymer/google-apis": "3.0.1",
+      "@polymer/polymer": "3.0.0-pre.9",
     }
   }
 
@@ -40,7 +46,74 @@ Lockfile:
   # yarn lockfile v1
   
   
-  "@polymer/polymer@^3.0.0-pre.1":
+  "@em-polymer/google-apis@3.0.1", "@em-polymer/google-apis@^3.0.0-pre.1":
+    version "3.0.1"
+    resolved "https://registry.yarnpkg.com/@em-polymer/google-apis/-/google-apis-3.0.1.tgz#4d1639dcc8cfa399f35c2a085cd923a0eb309c41"
+    dependencies:
+      "@polymer/iron-jsonp-library" "^3.0.0-pre.1"
+      "@polymer/polymer" "^3.0.0-pre.1"
+  
+  "@em-polymer/google-map@^3.0.0-pre.5":
+    version "3.0.0-pre.5"
+    resolved "https://registry.yarnpkg.com/@em-polymer/google-map/-/google-map-3.0.0-pre.5.tgz#d5ae58127c254b9bd18f3c3fbc480c6228383d70"
+    dependencies:
+      "@em-polymer/google-apis" "^3.0.0-pre.1"
+      "@polymer/iron-resizable-behavior" "^3.0.0-pre.1"
+      "@polymer/iron-selector" "^3.0.0-pre.1"
+      "@polymer/polymer" "^3.0.0-pre.1"
+  
+  "@polymer/font-roboto@^3.0.0-pre.7":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/font-roboto/-/font-roboto-3.0.0-pre.8.tgz#c8a3e168eacab03cd91fd52d7be72f4fd199cab9"
+  
+  "@polymer/iron-flex-layout@^3.0.0-pre.7":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/iron-flex-layout/-/iron-flex-layout-3.0.0-pre.8.tgz#9588dec5d06e1a3d0671007680e54121141df7f4"
+    dependencies:
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/iron-image@^3.0.0-pre.7":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/iron-image/-/iron-image-3.0.0-pre.8.tgz#d2f82012c2851bf170b96820b37a7cf83daa5fe3"
+    dependencies:
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/iron-jsonp-library@^3.0.0-pre.1":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/iron-jsonp-library/-/iron-jsonp-library-3.0.0-pre.8.tgz#05f5ce9529d0b3ef67778a896e53054fb7839e7f"
+    dependencies:
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/iron-resizable-behavior@^3.0.0-pre.1":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/iron-resizable-behavior/-/iron-resizable-behavior-3.0.0-pre.8.tgz#2aa4489b1b45367fde383aa262374a5bb77c68a5"
+    dependencies:
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/iron-selector@^3.0.0-pre.1":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/iron-selector/-/iron-selector-3.0.0-pre.8.tgz#5eca616365ecd8b2a7e26bfcd8e5c02ba82b7705"
+    dependencies:
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/paper-card@^3.0.0-pre.8":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/paper-card/-/paper-card-3.0.0-pre.8.tgz#cee5473432a22091635143d8c61062cf368a3976"
+    dependencies:
+      "@polymer/iron-flex-layout" "^3.0.0-pre.7"
+      "@polymer/iron-image" "^3.0.0-pre.7"
+      "@polymer/paper-styles" "^3.0.0-pre.7"
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/paper-styles@^3.0.0-pre.7":
+    version "3.0.0-pre.8"
+    resolved "https://registry.yarnpkg.com/@polymer/paper-styles/-/paper-styles-3.0.0-pre.8.tgz#3f5ee7b025a8af914928c7c86add23ff05ae4f4d"
+    dependencies:
+      "@polymer/font-roboto" "^3.0.0-pre.7"
+      "@polymer/iron-flex-layout" "^3.0.0-pre.7"
+      "@polymer/polymer" "^3.0.0-pre.7"
+  
+  "@polymer/polymer@3.0.0-pre.9", "@polymer/polymer@^3.0.0-pre.1", "@polymer/polymer@^3.0.0-pre.7":
     version "3.0.0-pre.9"
     resolved "https://registry.yarnpkg.com/@polymer/polymer/-/polymer-3.0.0-pre.9.tgz#f25a9f6674a9fee0e486259b34ec60a6dcaffb28"
     dependencies:
@@ -54,16 +127,20 @@ Lockfile:
   "@webcomponents/webcomponentsjs@1.0.20", "@webcomponents/webcomponentsjs@^1.0.0", "@webcomponents/webcomponentsjs@^1.0.20":
     version "1.0.20"
     resolved "https://registry.yarnpkg.com/@webcomponents/webcomponentsjs/-/webcomponentsjs-1.0.20.tgz#bac97c9709a3130241da4c2c85710e1dc8775b1c"
+  
+  moment@^2.20.1:
+    version "2.20.1"
+    resolved "https://registry.yarnpkg.com/moment/-/moment-2.20.1.tgz#d6eb1a46cbcc14a2b2f9434112c1ff8907f313fd"
+  
+  satellite.js@1.3.0, satellite.js@^1.3.0:
+    version "1.3.0"
+    resolved "https://registry.yarnpkg.com/satellite.js/-/satellite.js-1.3.0.tgz#030d03fd4dd52472eb7ea7a328c693bd0e83d9e5"
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@GoogleWebComponents%2fgoogle-map: Not found
-      at Request.params.callback [as _callback] (/usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:62098:18)
-      at Request.self.callback (/usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:123085:22)
-      at Request.emit (events.js:160:13)
-      at Request.<anonymous> (/usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:124068:10)
-      at Request.emit (events.js:160:13)
-      at IncomingMessage.<anonymous> (/usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:123988:12)
-      at Object.onceWrapper (events.js:255:19)
-      at IncomingMessage.emit (events.js:165:20)
-      at endReadableNT (_stream_readable.js:1101:12)
-      at process._tickCallback (internal/process/next_tick.js:152:19)
+  SyntaxError: /Users/emedvedev/Code/space-satmap/package.json: Unexpected token } in JSON at position 764
+      at JSON.parse (<anonymous>)
+      at /usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:770:59
+      at Generator.next (<anonymous>)
+      at step (/usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:92:30)
+      at /usr/local/Cellar/yarn/1.3.2/libexec/lib/cli.js:103:13
+      at <anonymous>

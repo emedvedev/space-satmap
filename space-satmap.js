@@ -1,10 +1,21 @@
-// TODO: Observer's horizon / station's reach
-// TODO: "Radar" animation + change color on pass (?)
-// TODO: Molniya orbit render
+// TODO: (pass) Styling
+
+// TODO: Render on a phone (switch between map / passes)
+// TODO: Hide pass data (only header)
+
+// TODO: Submit a pass PR to satellite.js
+
+// TODO: Offline viewing
+
+// ----- Far-reaching TODOs: -----
+
+// TODO: (pass) Shared cache
+// TODO: Notifications? (flag on <space-satmap>)
+
 // TODO: Center the map on the satellite ("focus=id" parameter on <space-satmap>?)
-// TODO: Push notifications? ("enable-push on <space-satmap>")
-// TODO: Passes render on a phone
-// TODO: hide pass data (only header)
+
+// TODO: Next N passes
+// TODO: Next N visible passes vs next N all passes
 
 import '/node_modules/@em-polymer/google-map/google-map-elements.js';
 import '/node_modules/@em-polymer/google-apis/google-maps-api.js';

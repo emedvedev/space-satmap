@@ -1,8 +1,6 @@
 // Most of this code has been adapted from n2yo.com.
 // Wouldn't be possible without them!
 
-import '../node_modules/suncalc/suncalc.js';
-
 function julianDate(date) {
   return (date.getTime() / 86400000) + 2440587.5;
 }
