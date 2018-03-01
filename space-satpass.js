@@ -276,9 +276,9 @@ class SpaceSatpass extends Element {
         .pass-header {
           @apply --paper-font-headline;
           line-height: 32px;
-          margin: -16px -16px 20px;
+          margin: -16px -16px 0;
           padding: 13px 16px 12px;
-          /*border-bottom: 1px solid rgba(0, 0, 0, .12);*/
+          border-bottom: 1px solid rgba(0, 0, 0, .12);
         }
         .pass-header img {
           vertical-align: middle;
@@ -398,26 +398,27 @@ class SpaceSatpass extends Element {
           margin-top: 5px;
         }
         h3 {
+          font-size: 30px;
           text-align: center;
           line-height: 22px;
-          margin: 0 0 20px;
-          font-weight: 500;
+          font-weight: 400;
+          text-align: left;
+          margin: 0 0 -5px;
         }
         h3 span {
           display: block;
-          text-transform: uppercase;
           font-size: 14px;
           font-weight: 400;
-        }
-        h3.now {
-          line-height: 44px;
-          text-transform: uppercase;
-          font-size: 16px;
+          color: rgba(0, 0, 0, .54);
+          margin-top: 6px;
         }
 
         .pass-content {
+          /*border-bottom: 1px solid rgba(0, 0, 0, .12);*/
+          margin: 10px -16px -5px;
           display: flex;
           flex-wrap: wrap;
+          padding: 20px 16px 16px;
         }
         .pass-time {
           width: 50%;
@@ -430,6 +431,7 @@ class SpaceSatpass extends Element {
         }
         .pass-position {
           width: 100%;
+          margin-top: 15px;
           box-sizing: border-box;
         }
 
@@ -446,6 +448,7 @@ class SpaceSatpass extends Element {
           display: flex;
           align-items: center;
           padding-left: 32px;
+          margin-top: 3px;
         }
         .pass-visibility span {
           background: rgba(0, 0, 0, .12);
@@ -468,7 +471,7 @@ class SpaceSatpass extends Element {
           height: 16px;
           left: 0;
           content: '';
-          opacity: .54;
+          opacity: .87;
         }
         .pass-duration::before {
           background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48cGF0aCBkPSJNMzkzLjkgMTg0bDIyLjYtMjIuNmM0LjctNC43IDQuNy0xMi4zIDAtMTdsLTE3LTE3Yy00LjctNC43LTEyLjMtNC43LTE3IDBsLTIwLjcgMjAuN2MtMzEuMS0yNy41LTcwLjQtNDUuOS0xMTMuOC01MC44VjQ4aDI4YzYuNiAwIDEyLTUuNCAxMi0xMlYxMmMwLTYuNi01LjQtMTItMTItMTJIMTcyYy02LjYgMC0xMiA1LjQtMTIgMTJ2MjRjMCA2LjYgNS40IDEyIDEyIDEyaDI4djQ5LjRDOTYuNCAxMDkuMyAxNiAxOTcuMiAxNiAzMDRjMCAxMTQuOSA5My4xIDIwOCAyMDggMjA4czIwOC05My4xIDIwOC0yMDhjMC00NC43LTE0LjEtODYuMS0zOC4xLTEyMHpNMjI0IDQ2NGMtODguNCAwLTE2MC03MS42LTE2MC0xNjBzNzEuNi0xNjAgMTYwLTE2MCAxNjAgNzEuNiAxNjAgMTYwLTcxLjYgMTYwLTE2MCAxNjB6bTEyLTExMmgtMjRjLTYuNiAwLTEyLTUuNC0xMi0xMlYyMDRjMC02LjYgNS40LTEyIDEyLTEyaDI0YzYuNiAwIDEyIDUuNCAxMiAxMnYxMzZjMCA2LjYtNS40IDEyLTEyIDEyeiIvPjwvc3ZnPg==);
@@ -478,6 +481,16 @@ class SpaceSatpass extends Element {
         }
         .pass-visibility.invisible::before {
           background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgNTEyIj48cGF0aCBkPSJNMjcyLjcwMiAzNTkuMTM5Yy04MC40ODMtOS4wMTEtMTM2LjIxMi04Ni44ODYtMTE2LjkzLTE2Ny4wNDJsMTE2LjkzIDE2Ny4wNDJ6TTI4OCAzOTJjLTEwMi41NTYgMC0xOTIuMDkyLTU0LjcwMS0yNDAtMTM2IDIxLjc1NS0zNi45MTcgNTIuMS02OC4zNDIgODguMzQ0LTkxLjY1OGwtMjcuNTQxLTM5LjM0M0M2Ny4wMDEgMTUyLjIzNCAzMS45MjEgMTg4Ljc0MSA2LjY0NiAyMzEuNjMxYTQ3Ljk5OSA0Ny45OTkgMCAwIDAgMCA0OC43MzlDNjMuMDA0IDM3Ni4wMDYgMTY4LjE0IDQ0MCAyODggNDQwYTMzMi44OSAzMzIuODkgMCAwIDAgMzkuNjQ4LTIuMzY3bC0zMi4wMjEtNDUuNzQ0QTI4NC4xNiAyODQuMTYgMCAwIDEgMjg4IDM5MnptMjgxLjM1NC0xMTEuNjMxYy0zMy4yMzIgNTYuMzk0LTgzLjQyMSAxMDEuNzQyLTE0My41NTQgMTI5LjQ5Mmw0OC4xMTYgNjguNzRjMy44MDEgNS40MjkgMi40OCAxMi45MTItMi45NDkgMTYuNzEyTDQ1MC4yMyA1MDkuODNjLTUuNDI5IDMuODAxLTEyLjkxMiAyLjQ4LTE2LjcxMi0yLjk0OUwxMDIuMDg0IDMzLjM5OWMtMy44MDEtNS40MjktMi40OC0xMi45MTIgMi45NDktMTYuNzEyTDEyNS43NyAyLjE3YzUuNDI5LTMuODAxIDEyLjkxMi0yLjQ4IDE2LjcxMiAyLjk0OWw1NS41MjYgNzkuMzI1QzIyNi42MTIgNzYuMzQzIDI1Ni44MDggNzIgMjg4IDcyYzExOS44NiAwIDIyNC45OTYgNjMuOTk0IDI4MS4zNTQgMTU5LjYzMWE0OC4wMDIgNDguMDAyIDAgMCAxIDAgNDguNzM4ek01MjggMjU2Yy00NC4xNTctNzQuOTMzLTEyMy42NzctMTI3LjI3LTIxNi4xNjItMTM1LjAwN0MzMDIuMDQyIDEzMS4wNzggMjk2IDE0NC44MyAyOTYgMTYwYzAgMzAuOTI4IDI1LjA3MiA1NiA1NiA1NnM1Ni0yNS4wNzIgNTYtNTZsLS4wMDEtLjA0MmMzMC42MzIgNTcuMjc3IDE2LjczOSAxMzAuMjYtMzYuOTI4IDE3MS43MTlsMjYuNjk1IDM4LjEzNUM0NTIuNjI2IDM0Ni41NTEgNDk4LjMwOCAzMDYuMzg2IDUyOCAyNTZ6Ii8+PC9zdmc+);
+        }
+        h3.now {
+          margin: 25px 0 20px;
+        }
+        p.body {
+          font-size: 14px;
+          margin-bottom: 0;
+          width: 100%;
+          color: rgba(0, 0, 0, .54);
+          line-height: 1.5;
         }
       </style>
 
@@ -489,65 +502,64 @@ class SpaceSatpass extends Element {
               [[satellite.name]]
             </h2>
 
-            <div class="pass-content">
-
               <template is="dom-if" if="[[stationary]]">
-
-                <div class="pass-time">
-                  <h3 class="now">Stationary</h3>
-                  <p>The satellite appears to have a geostationary orbit.</p>
-                </div>
-
+                <h3 class="now">Stationary</h3>
+                <p class="body">The satellite appears to have a&nbsp;geostationary orbit.</p>
               </template>
               <template is="dom-if" if="[[!stationary]]">
 
                 <template is="dom-if" if="[[passes.0]]">
 
-                  <div class="pass-time">
-                    <template is="dom-if" if="[[passes.0.now]]">
-                      <h3 class="now">Passing</h3>
-                    </template>
-                    <template is="dom-if" if="[[!passes.0.now]]">
-                      <h3 class="until">[[passes.0.until]] <span>until pass</span></h3>
-                    </template>
-                  </div>
+                  <div class="pass-content">
+                    <div class="pass-time">
+                      <template is="dom-if" if="[[passes.0.now]]">
+                        <h3 class="until">
+                          Passing
+                          <span>above horizon</span>
+                        </h3>
+                      </template>
+                      <template is="dom-if" if="[[!passes.0.now]]">
+                        <h3 class="until">[[passes.0.until]] <span>until pass</span></h3>
+                      </template>
+                    </div>
 
-                  <div class="pass-parameters">
-                    <div class="pass-duration">[[passes.0.duration]]</div>
-                    <template is="dom-if" if="[[passes.0.visibilitySegments.0]]">
-                      <div class="pass-visibility">
-                        <span class="active"></span>
-
-                        <template is="dom-if" if="[[passes.0.visibilitySegments.1]]">
+                    <div class="pass-parameters">
+                      <div class="pass-duration">[[passes.0.duration]]</div>
+                      <template is="dom-if" if="[[passes.0.visibilitySegments.0]]">
+                        <div class="pass-visibility">
                           <span class="active"></span>
-                        </template>
 
-                        <template is="dom-if" if="[[!passes.0.visibilitySegments.1]]">
-                          <span></span>
-                        </template>
+                          <template is="dom-if" if="[[passes.0.visibilitySegments.1]]">
+                            <span class="active"></span>
+                          </template>
 
-                        <template is="dom-if" if="[[passes.0.visibilitySegments.2]]">
-                          <span class="active"></span>
-                        </template>
+                          <template is="dom-if" if="[[!passes.0.visibilitySegments.1]]">
+                            <span></span>
+                          </template>
 
-                        <template is="dom-if" if="[[!passes.0.visibilitySegments.2]]">
-                          <span></span>
-                        </template>
+                          <template is="dom-if" if="[[passes.0.visibilitySegments.2]]">
+                            <span class="active"></span>
+                          </template>
 
-                        <template is="dom-if" if="[[passes.0.visibilitySegments.3]]">
-                          <span class="active"></span>
-                        </template>
+                          <template is="dom-if" if="[[!passes.0.visibilitySegments.2]]">
+                            <span></span>
+                          </template>
 
-                        <template is="dom-if" if="[[!passes.0.visibilitySegments.3]]">
-                          <span></span>
-                        </template>
-                      </div>
-                    </template>
-                    <template is="dom-if" if="[[!passes.0.visibilitySegments.0]]">
-                      <div class="pass-visibility invisible">
-                        <span></span><span></span><span></span><span></span>
-                      </div>
-                    </template>
+                          <template is="dom-if" if="[[passes.0.visibilitySegments.3]]">
+                            <span class="active"></span>
+                          </template>
+
+                          <template is="dom-if" if="[[!passes.0.visibilitySegments.3]]">
+                            <span></span>
+                          </template>
+                        </div>
+                      </template>
+                      <template is="dom-if" if="[[!passes.0.visibilitySegments.0]]">
+                        <div class="pass-visibility invisible">
+                          <span></span><span></span><span></span><span></span>
+                        </div>
+                      </template>
+                    </div>
                   </div>
 
                   <div class="pass-position">
@@ -574,10 +586,8 @@ class SpaceSatpass extends Element {
                 </template>
 
                 <template is="dom-if" if="[[!passes.0]]">
-                  <div class="pass-time">
-                    <h3 class="now">No passes</h3>
-                    <p>No passes for the next 48 hours.</p>
-                  </div>
+                  <h3 class="now">No passes</h3>
+                  <p class="body">Next passes are calculated for the next 48 hours.</p>
                 </template>
 
               </template>

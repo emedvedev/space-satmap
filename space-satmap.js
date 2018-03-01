@@ -1,9 +1,5 @@
-// TODO: (pass) Styling
-
 // TODO: Render on a phone (switch between map / passes)
 // TODO: Hide pass data (only header)
-
-// TODO: Submit a pass PR to satellite.js
 
 // TODO: Offline viewing
 
