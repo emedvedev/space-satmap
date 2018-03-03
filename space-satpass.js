@@ -271,6 +271,7 @@ class SpaceSatpass extends Element {
         }
         paper-card {
           width: 100%;
+          height: 100%;
           box-sizing: border-box;
         }
         .pass-header {
@@ -413,6 +414,13 @@ class SpaceSatpass extends Element {
           margin-top: 6px;
         }
 
+        .card-content {
+          height: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
+
         .pass-content {
           /*border-bottom: 1px solid rgba(0, 0, 0, .12);*/
           margin: 10px -16px -5px;
@@ -423,6 +431,7 @@ class SpaceSatpass extends Element {
         .pass-time {
           width: 50%;
           box-sizing: border-box;
+          flex: 1;
         }
         .pass-parameters {
           width: 50%;
@@ -433,6 +442,16 @@ class SpaceSatpass extends Element {
           width: 100%;
           margin-top: 15px;
           box-sizing: border-box;
+          height: 130px;
+        }
+        .pass-dummy {
+          border-radius: 0 0 2px 2px;
+          box-sizing: border-box;
+          background: #fafafa;
+          margin: 16px -16px -16px;
+          background-image: linear-gradient(-45deg, rgba(0, 0, 0, .12) 25%, rgba(0, 0, 0, .03) 25%, rgba(0, 0, 0, .03) 50%, rgba(0, 0, 0, .12) 50%, rgba(0, 0, 0, .12) 75%, rgba(0, 0, 0, .03) 75%, rgba(0, 0, 0, .03));
+          background-size: 4px 4px;
+          flex: 1;
         }
 
         .pass-duration,
@@ -503,8 +522,12 @@ class SpaceSatpass extends Element {
             </h2>
 
               <template is="dom-if" if="[[stationary]]">
-                <h3 class="now">Stationary</h3>
-                <p class="body">The satellite appears to have a&nbsp;geostationary orbit.</p>
+                <div class="pass-content">
+                  <div class="pass-time">
+                    <h3 class="until">Stationary <span>stays above horizon</span></h3>
+                  </div>
+                </div>
+                <div class="pass-dummy"></div>
               </template>
               <template is="dom-if" if="[[!stationary]]">
 
@@ -513,10 +536,7 @@ class SpaceSatpass extends Element {
                   <div class="pass-content">
                     <div class="pass-time">
                       <template is="dom-if" if="[[passes.0.now]]">
-                        <h3 class="until">
-                          Passing
-                          <span>above horizon</span>
-                        </h3>
+                        <h3 class="until">Passing <span>above horizon</span></h3>
                       </template>
                       <template is="dom-if" if="[[!passes.0.now]]">
                         <h3 class="until">[[passes.0.until]] <span>until pass</span></h3>
@@ -527,9 +547,18 @@ class SpaceSatpass extends Element {
                       <div class="pass-duration">[[passes.0.duration]]</div>
                       <template is="dom-if" if="[[passes.0.visibilitySegments.0]]">
                         <div class="pass-visibility">
+
                           <span class="active"></span>
 
                           <template is="dom-if" if="[[passes.0.visibilitySegments.1]]">
+                            <span class="active"></span>
+                          </template>
+
+                          <template is="dom-if" if="[[passes.0.visibilitySegments.2]]">
+                            <span class="active"></span>
+                          </template>
+
+                          <template is="dom-if" if="[[passes.0.visibilitySegments.3]]">
                             <span class="active"></span>
                           </template>
 
@@ -537,21 +566,14 @@ class SpaceSatpass extends Element {
                             <span></span>
                           </template>
 
-                          <template is="dom-if" if="[[passes.0.visibilitySegments.2]]">
-                            <span class="active"></span>
-                          </template>
-
                           <template is="dom-if" if="[[!passes.0.visibilitySegments.2]]">
                             <span></span>
-                          </template>
-
-                          <template is="dom-if" if="[[passes.0.visibilitySegments.3]]">
-                            <span class="active"></span>
                           </template>
 
                           <template is="dom-if" if="[[!passes.0.visibilitySegments.3]]">
                             <span></span>
                           </template>
+
                         </div>
                       </template>
                       <template is="dom-if" if="[[!passes.0.visibilitySegments.0]]">
@@ -586,8 +608,12 @@ class SpaceSatpass extends Element {
                 </template>
 
                 <template is="dom-if" if="[[!passes.0]]">
-                  <h3 class="now">No passes</h3>
-                  <p class="body">Next passes are calculated for the next 48 hours.</p>
+                  <div class="pass-content">
+                    <div class="pass-time">
+                      <h3 class="until">No passes <span>within the next 48 hours</span></h3>
+                    </div>
+                  </div>
+                  <div class="pass-dummy"></div>
                 </template>
 
               </template>

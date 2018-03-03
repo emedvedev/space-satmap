@@ -10,6 +10,7 @@
   "dependencies": {
     "@em-polymer/google-map": "^3.0.0-pre.5",
     "@polymer/paper-card": "^3.0.0-pre.8",
+    "@polymer/paper-toggle-button": "^3.0.0-pre.10",
     "@polymer/polymer": "^3.0.0-pre.1",
     "@webcomponents/webcomponentsjs": "^1.0.20",
     "moment": "^2.20.1",
@@ -18,6 +19,9 @@
   "resolutions": {
     "@webcomponents/webcomponentsjs": "1.0.20",
     "@em-polymer/google-apis": "3.0.1",
-    "@polymer/polymer": "3.0.0-pre.9"
+    "@polymer/polymer": "3.0.0-pre.9",
+    "@polymer/iron-flex-layout": "3.0.0-pre.10",
+    "@polymer/paper-styles": "3.0.0-pre.10",
+    "@polymer/font-roboto": "3.0.0-pre.10"
   }
 }

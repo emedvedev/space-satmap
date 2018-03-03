@@ -1,7 +1,6 @@
-// TODO: Render on a phone (switch between map / passes)
-// TODO: Hide pass data (only header)
+// TODO: Render on a phone (tabs: switch between map / passes)
 
-// TODO: Offline viewing
+// TODO: Offline viewing / cache
 
 // ----- Far-reaching TODOs: -----
 
@@ -18,6 +17,7 @@ import '/node_modules/@em-polymer/google-apis/google-maps-api.js';
 import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
 import '/node_modules/@polymer/paper-styles/element-styles/paper-item-styles.js';
 import '/node_modules/@polymer/paper-card/paper-card.js';
+import '/node_modules/@polymer/paper-toggle-button/paper-toggle-button.js';
 import { FlattenedNodesObserver } from '/node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
 import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
@@ -57,6 +57,10 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         type: Boolean,
         value: false,
       },
+      passesEnabled: {
+        type: Boolean,
+        value: true,
+      },
       satelliteRedraw: {
         type: Number,
         value: 200,
@@ -85,6 +89,10 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
       navigator.geolocation.getCurrentPosition(this._updateGround.bind(this));
       navigator.geolocation.watchPosition(this._updateGround.bind(this));
     }
+  }
+
+  togglePasses() {
+    this.passesEnabled = !this.passesEnabled;
   }
 
   _updateGround(position) {
@@ -248,12 +256,63 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         .passes {
           position: absolute;
           left: 10px;
+          right: 80px;
           bottom: 22px;
+
           display: flex;
+          flex-wrap: wrap;
+
+          pointer-events: none;
+        }
+        .passes>* {
+          pointer-events: auto;
         }
         space-satpass {
-          margin: 0 10px 0 0;
+          margin: 10px 10px 0 0;
         }
+        .passes paper-card {
+          position: absolute;
+          top: -40px;
+          font-size: 11px;
+          height: 29px;
+          line-height: 29px;
+          padding: 0 8px 0 30px;
+          color: rgb(86, 86, 86);
+          cursor: default;
+        }
+        .passes paper-card span {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          background-color: rgba(255,255,255,.65);
+          border: 1px solid rgba(155,155,155,.57);
+          border-radius: 1px;
+          font-size: 1px;
+          height: 11px;
+          margin: 0 4px 0 1px;
+          outline: 0;
+          width: 11px;
+        }
+        .passes paper-card:hover span {
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .1);
+          border: 1px solid #b2b2b2;
+        }
+        .passes paper-card span.checked::before {
+          content: '';
+          height: 15px;
+          outline: 0;
+          width: 15px;
+          left: 0;
+          position: relative;
+          display: block;
+          top: -3px;
+          background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAtklEQVQ4y2P4//8/A7Ux1Q0cxoaCADIbCUgCMTvVXAoE5kA8CYidyXYpGrAH4iVAHIXiCwoMDQTimUBcBsRMlBrKCsTpUANzkC0j11BuIK6EGlgKsoAkQ4FgChD7AzELVI8YEDdDDawDYk6YQaQY6gg1oAqILYC4D8oHGcyLbBAphoJAKtQgGO4EYiHk2CLHUJAXm6AG9gCxNHoSIMdQEJCFGqiALaGSayjMxQwUGzq0S6nhZygA2ojsbh6J67kAAAAASUVORK5CYII=) no-repeat -5px -3px;
+          background-image: -webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAtklEQVQ4y2P4//8/A7Ux1Q0cxoaCADIbCUgCMTvVXAoE5kA8CYidyXYpGrAH4iVAHIXiCwoMDQTimUBcBsRMlBrKCsTpUANzkC0j11BuIK6EGlgKsoAkQ4FgChD7AzELVI8YEDdDDawDYk6YQaQY6gg1oAqILYC4D8oHGcyLbBAphoJAKtQgGO4EYiHk2CLHUJAXm6AG9gCxNHoSIMdQEJCFGqiALaGSayjMxQwUGzq0S6nhZygA2ojsbh6J67kAAAAASUVORK5CYII=) 1x, url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACoAAAAqCAYAAADFw8lbAAABLUlEQVRYw+3XvyuEcRzAcVwUJQMWNnKz5VI2y5XhBv+AorwWi00m9wfIKrJbmG4wKmWR9YYbKBMmEVFHZzFc345M5zN83/UsT996Xj1Pz/dHT08ul8vlct0M29iMDOzDHlrfVzUisoDDNmQLu9GQg6glyJ1oyGGcJcgD9EZCjuIyQR6hEAk5gXqCrKE/EnIKNwnyFAORkEXcJshzDEVCzuIhQV5hJBJyHo8Jso6xSMgyXhLkNSa78fATTP9h3CJeE+Qdit16Sy00sY/xH8as4KMDcqabn7N983CPtfaJGqsdkE8o/cdO5ziBNFBBNbnfwjPm/nMzcdEBlV5vWIiwXjd+Qb6jHGlJfOiAbGIp2natlMyVn1iOepSotP3p69EPZhvYykfUXC6Xy+XC9QXkXzluK91iJAAAAABJRU5ErkJggg==) 2x);
+          background-image: image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAtklEQVQ4y2P4//8/A7Ux1Q0cxoaCADIbCUgCMTvVXAoE5kA8CYidyXYpGrAH4iVAHIXiCwoMDQTimUBcBsRMlBrKCsTpUANzkC0j11BuIK6EGlgKsoAkQ4FgChD7AzELVI8YEDdDDawDYk6YQaQY6gg1oAqILYC4D8oHGcyLbBAphoJAKtQgGO4EYiHk2CLHUJAXm6AG9gCxNHoSIMdQEJCFGqiALaGSayjMxQwUGzq0S6nhZygA2ojsbh6J67kAAAAASUVORK5CYII=) 1x, url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACoAAAAqCAYAAADFw8lbAAABLUlEQVRYw+3XvyuEcRzAcVwUJQMWNnKz5VI2y5XhBv+AorwWi00m9wfIKrJbmG4wKmWR9YYbKBMmEVFHZzFc345M5zN83/UsT996Xj1Pz/dHT08ul8vlct0M29iMDOzDHlrfVzUisoDDNmQLu9GQg6glyJ1oyGGcJcgD9EZCjuIyQR6hEAk5gXqCrKE/EnIKNwnyFAORkEXcJshzDEVCzuIhQV5hJBJyHo8Jso6xSMgyXhLkNSa78fATTP9h3CJeE+Qdit16Sy00sY/xH8as4KMDcqabn7N983CPtfaJGqsdkE8o/cdO5ziBNFBBNbnfwjPm/nMzcdEBlV5vWIiwXjd+Qb6jHGlJfOiAbGIp2natlMyVn1iOepSotP3p69EPZhvYykfUXC6Xy+XC9QXkXzluK91iJAAAAABJRU5ErkJggg==) 2x);
+        }
+        /*.passes paper-card:hover {
+          background-color: rgb(235, 235, 235);
+        }*/
       </style>
 
       <google-map map="{{map}}" latitude="0" longitude="0"
@@ -267,10 +326,22 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
 
       <template is="dom-if" if="[[_showPasses]]">
         <div class="passes">
-          <template is="dom-repeat" items="[[satellites]]">
-            <space-satpass satellite="[[item]]"
-              ground-latitude="[[groundLatitude]]"
-              ground-longitude="[[groundLongitude]]"></space-satpass>
+
+          <paper-card on-click="togglePasses" elevation="1">
+            <template is="dom-if" if="[[passesEnabled]]">
+              <span class="checked"></span> Show passes
+            </template>
+            <template is="dom-if" if="[[!passesEnabled]]">
+              <span></span> Show passes
+            </template>
+          </paper-card>
+
+          <template is="dom-if" if="[[passesEnabled]]">
+            <template is="dom-repeat" items="[[satellites]]">
+              <space-satpass satellite="[[item]]"
+                ground-latitude="[[groundLatitude]]"
+                ground-longitude="[[groundLongitude]]"></space-satpass>
+            </template>
           </template>
         </div>
       </template>

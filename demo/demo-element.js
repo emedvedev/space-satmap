@@ -42,10 +42,10 @@ class DemoElement extends Element {
         }
       </style>
       <space-satmap detect-location satellite-redraw="200">
-        <space-satellite name="QZS-2" tle="[[qzs2]]" orbit-color="teal" icon="bonbon"></space-satellite>
-        <space-satellite name="Molniya 3-47" tle="[[molniya347]]" orbit-color="black" icon="sputnik"></space-satellite>
-        <space-satellite name="ISS" tle="[[iss]]" orbit-color="blue" icon="cutie"></space-satellite>
-        <space-satellite name="AO-73" tle="[[ao73]]" icon="cubesat"></space-satellite>
+        <space-satellite name="Molniya 3-47" tle="[[molniya347]]" orbit-color="#2980b9" icon="sputnik"></space-satellite>
+        <space-satellite name="QZS-2" tle="[[qzs2]]" orbit-color="#f39c12" icon="bonbon"></space-satellite>
+        <space-satellite name="ISS" tle="[[iss]]" orbit-color="#c0392b" icon="cutie"></space-satellite>
+        <space-satellite name="AO-73" tle="[[ao73]]" icon="cubesat" orbit-color="#8e44ad"></space-satellite>
         <space-satellite name="COMSATBW-2" tle="[[comsat]]" hide-orbit icon="teal"></space-satellite>
       </space-satmap>
     `;
