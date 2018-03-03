@@ -41,6 +41,11 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         type: Boolean,
         computed: '_hasGroundStation(groundLatitude, groundLongitude)',
       },
+      showPasses: {
+        type: Boolean,
+        value: false,
+        computed: '_showPasses(hideNextPass, satellites, groundLatitude)',
+      },
       detectLocation: {
         type: Boolean,
         value: false,
@@ -324,7 +329,7 @@ class SpaceSatmap extends mixinBehaviors([IronResizableBehavior], Element) {
         <slot></slot>
       </google-map>
 
-      <template is="dom-if" if="[[_showPasses]]">
+      <template is="dom-if" if="[[showPasses]]">
         <div class="passes">
 
           <paper-card on-click="togglePasses" elevation="1">
