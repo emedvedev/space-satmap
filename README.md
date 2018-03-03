@@ -1,2 +1,2 @@
-# Satellite tracker for Polymer
+# Satellite tracking components for Polymer
 
