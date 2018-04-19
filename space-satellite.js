@@ -1,7 +1,7 @@
-import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
-import '/node_modules/@em-polymer/google-map/google-map-elements.js';
-import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
-import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
+import { html, Element } from './node_modules/@polymer/polymer/polymer-element.js';
+import './node_modules/@em-polymer/google-map/google-map-elements.js';
+import './node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
+import './node_modules/@polymer/polymer/lib/elements/dom-if.js';
 import { twoline2satrec } from './utils/satellite.js';
 import predict from './utils/jspredict.js';
 import satIcons from './space-icons.js';

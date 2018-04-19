@@ -1,7 +1,7 @@
-import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
+import { html, Element } from './node_modules/@polymer/polymer/polymer-element.js';
 
-import '/node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
-import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
+import './node_modules/@polymer/polymer/lib/elements/dom-repeat.js';
+import './node_modules/@polymer/polymer/lib/elements/dom-if.js';
 import predict from './utils/jspredict.js';
 import satIcons from './space-icons.js';
 

@@ -12,16 +12,16 @@
 // TODO: Next N passes
 // TODO: Next N visible passes vs next N all passes
 
-import '/node_modules/@em-polymer/google-map/google-map-elements.js';
-import '/node_modules/@em-polymer/google-apis/google-maps-api.js';
-import '/node_modules/@polymer/polymer/lib/elements/dom-if.js';
-import '/node_modules/@polymer/paper-styles/element-styles/paper-item-styles.js';
-import '/node_modules/@polymer/paper-card/paper-card.js';
-import '/node_modules/@polymer/paper-toggle-button/paper-toggle-button.js';
-import { FlattenedNodesObserver } from '/node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
-import { mixinBehaviors } from '/node_modules/@polymer/polymer/lib/legacy/class.js';
-import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
-import { IronResizableBehavior } from '/node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
+import './node_modules/@em-polymer/google-map/google-map-elements.js';
+import './node_modules/@em-polymer/google-apis/google-maps-api.js';
+import './node_modules/@polymer/polymer/lib/elements/dom-if.js';
+import './node_modules/@polymer/paper-styles/element-styles/paper-item-styles.js';
+import './node_modules/@polymer/paper-card/paper-card.js';
+import './node_modules/@polymer/paper-toggle-button/paper-toggle-button.js';
+import { FlattenedNodesObserver } from './node_modules/@polymer/polymer/lib/utils/flattened-nodes-observer.js';
+import { mixinBehaviors } from './node_modules/@polymer/polymer/lib/legacy/class.js';
+import { html, Element } from './node_modules/@polymer/polymer/polymer-element.js';
+import { IronResizableBehavior } from './node_modules/@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import { getEclipseOverlay } from './utils/sun.js';
 import './space-satellite.js';
 import './space-satpass.js';
