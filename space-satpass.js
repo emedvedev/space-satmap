@@ -153,7 +153,6 @@ class SpaceSatpass extends Element {
     }
     pass.duration = durationElements.join(' ');
 
-    console.log(pass);
     return pass;
   }
 
