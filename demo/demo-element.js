@@ -1,6 +1,6 @@
-import '/node_modules/@polymer/paper-styles/element-styles/paper-material-styles.js';
-import { html, Element } from '/node_modules/@polymer/polymer/polymer-element.js';
-import '/space-satmap.js';
+import '../node_modules/@polymer/paper-styles/element-styles/paper-material-styles.js';
+import { html, Element } from '../node_modules/@polymer/polymer/polymer-element.js';
+import '../space-satmap.js';
 
 class DemoElement extends Element {
   constructor() {
